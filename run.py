@@ -17,6 +17,13 @@ from main import debug, no_debug
 
 home_dir = os.path.expanduser("~")
 
+if "pydicom" not in [pkg.name for pkg in pkgutil.iter_modules()]:
+    pydicom_cmd = f"pip3 install pydicom"
+    run(pydicom_cmd)
+else:
+    pass
+
+
 
 # FUNCTIONS
 def help():
@@ -70,9 +77,9 @@ if os.path.isdir(pt_dir):
         os.makedirs("9_tract/")
         os.makedirs("10_ROI/")
         os.makedirs("11_nifti/")
-        os.makedirs("12_dicom")
+        os.makedirs("12_volumes")
         os.makedirs("13_misc/")
-        os.makedirs("14_volume/")
+        os.makedirs("14_dicom/")
 else:
     print("Error: Folder for the entered patient ID does not exists.")
     print("Exit analysis pipeline due to no pt data found")

@@ -1,4 +1,5 @@
 from Bash2PythonFuncs import zero_test, karawun_run, get_transform_matrix, register, run
+from final_dcm import final_dicom_conversion
 import os
 import subprocess
 
@@ -6,21 +7,11 @@ import subprocess
 """After masking"""
 
 
-# Then use flirt of the b0s to t1 (both the nii files) to get the transform matrix - can use t1 from dcm straight to nii
-# Save the transform matrix
-# Apply the flirt the the tracks after weve generated them - apply the transform matrix to the tracks
-# Check for strides
-# keep the strides the same for both conversions (strides are a flirt argument)
-# To check for the correct
-
-
-# python3.8 -m pip install karawun
-
-
 def registration(pt_dir, nii_files, dcm_template):
 
     nii_dir = f"{pt_dir}Processed/11_nifti/"
-    dcm_dir = f"{pt_dir}Processed/12_dicom/"
+    dcm_dir = f"{pt_dir}Processed/12_volumes/"
+    final_dir = f"{pt_dir}Processed/14_dicom/"
     
     binarised_object = f"{nii_dir}binarised_object.nii.gz"
     t1_object = f"{nii_dir}t1_object.nii.gz"
@@ -76,7 +67,11 @@ def registration(pt_dir, nii_files, dcm_template):
     
     dcm_conversion = karawun_run(pt_dir, dcm_template, t1_burned, dcm_dir, t1_nii)
     
-    dcm_dir = f"{dcm_dir}t1_burned"
+    dcm_dir = f"{dcm_dir}t1_burned/"
+
+    modified_dicom_path = f"{final_dir}Brainlab_Object.dcm"
+
+    final_dicom_conversion(dcm_dir, dcm_template, modified_dicom_path)
     
     
     
@@ -121,72 +116,3 @@ def registration(pt_dir, nii_files, dcm_template):
     print(result_str)
    
    
-   
-    '''
-    run(f"fslmaths 11_nifti/binarised_object.nii -mul 4090 11_nifti/object_dicom_range.nii")
-
-    # 4. multiply to the T1 and then subtract that part of the T1 from the original to make a T1_hole
-    run(f"fslmaths 11_nifti/T1_dicom_range.nii -add 11_nifti/object_dicom_range.nii 11_nifti/T1_object_burned.nii")
-
-    # 5. scale the T1 to be 0-2048
-
-    # 6. scale the object to be 3072-4095 (use the unthresholded but registered one)
-
-    # 7. add them together using mrcalc or fslmaths
-
-    # convert to dicom
-
-    # maximum values (for scaling)
-    run("fslstats 11_nifti/mrtrix3-OR_uni.nii -R")
-    run("fslstats 11_nifti/T1.nii -R")
-    '''
-    
-    
-
-    
-    
-
-
-#    To use the "applyxfm" command from FSL, you first need to have a transformation matrix file (in .mat format) that describes the transformation you want to apply to your image. Once you have this file, you can use the "applyxfm" command to apply the transformation to your input image.
-#
-#    Here is an example command:
-#
-#
-#    applyxfm -i input.nii.gz -r reference.nii.gz -o output.nii.gz -omat transformation.mat
-#
-#    In this command, "input.nii.gz" is the image you want to transform, "reference.nii.gz" is the reference image that you want the transformed image to be aligned with, and "transformation.mat" is the .mat file that contains the transformation matrix. The output of the command will be written to "output.nii.gz".
-#
-#    There are also several optional parameters that you can use to modify the behavior of the "applyxfm" command. For example, you can use the "-applyxfm" option to specify a different transformation matrix file to use, or the "-interp" option to choose the interpolation method used during the transformation.
-#
-#    You can find more information about the "applyxfm" command and its options in the FSL documentation.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-nii_files = ['/Users/oscarlally/Desktop/CCL/12345/raw/T1/t1.nii.gz',  '/Users/oscarlally/Desktop/CCL/12345/raw/Processed/6_mask/extracted_b0.nii']
-
-"""Useful Notes"""
-
-#script_dir = os.path.dirname(os.path.abspath(__file__))
-#p38_file = f"{script_dir}/p38_script.py"
-#karawun_dir = "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages"
-#importTractography --dicom-template path/to/a/dicom --nifti T1.nii.gz fa.nii.gz --tract-files left_cst.tck right_cst.tck --label-files lesion.nii.gz white_matter.nii.gz  --output-dir path/to/output/folder
-
-
-
-
-''' importTractography: error: argument -d/--dicom-template: /Users/oscarlally/Desktop/CCL/170030027/raw/Processed/12_dicom/t1_burned.dcm does not exist or is not readable'''
