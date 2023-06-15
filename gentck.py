@@ -3,7 +3,7 @@ import subprocess
 from Bash2PythonFuncs import run, find_dir, convert_tracts
 
 
-def gentck(pt_dir):
+def gentck(pt_dir, debug):
 
     GREEN='\e[0;32m'
     RED='\e[0;31m'
@@ -53,16 +53,6 @@ def gentck(pt_dir):
             ev = f"{processed_path}/7_tensor/ev.mif"
             dwi_tensor = f"{pt_dir}7_tensor/dwi_tensor.mif"
             
-#            print()
-#            print('Please check for Oedema in the tumour on the FA map.')
-#            oed = input('Is there oedema?  ')
-#            if oed.lower() == 'y':
-#                view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0 -cut off = 0.01"
-#                run(view_cmd)
-#            else:
-#                view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
-#                run(view_cmd)
-
 
             view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
             run(view_cmd)
@@ -231,7 +221,7 @@ def gentck(pt_dir):
         command = "echo {}".format(message)
         subprocess.run(command, shell=True)
       
-    convert_tracts(pt_dir)
+    convert_tracts(pt_dir, debug)
         
     return gen_tracks
 

@@ -27,12 +27,14 @@ dwi_PA_denoise = []
 
 
 def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
-
+    
     processed_dir = f"{pt_dir}Processed"
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     nii_files = []
+    
+    template_file = []
     
     if mask_skip == 'no':
     
@@ -57,6 +59,7 @@ def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
                     for j in files:
                         if 'dcm' in j:
                             t1_dcm = f"{i}{j}"
+                            template_file.append(t1_dcm)
                             t1_nii = f"{processed_dir}/11_nifti/t1.nii.gz"
                             t1_conv_cmd = f"mrconvert -strides -1,2,3 {t1_dcm} {t1_nii}"
                             output = f"{processed_dir}/1_convert/{i.split('/')[-2]}.mif"
@@ -217,23 +220,32 @@ def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
         run(mrview_cmd)
         print()
         
-        create_mask(pt_id, pt_dir, nii_files)
+        create_mask(pt_id, pt_dir, nii_files, 'debug')
         tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir)
-        t1_dcm = "/Users/oscarlally/Desktop/first_image.dcm"
-        registration(pt_dir, nii_files, t1_dcm)
+        gen_tracks = gentck(pt_dir, 'debug')
+        registration(pt_dir, template_file)
         
     else:
     
-        if len(nii_files) != 0:
+        if len(template_file) == 0:
+            for i in bvalue_folders:
+                if 't1' in i or 'T1' in i:
+                    files = os.listdir(i)
+                    for j in files:
+                        template_file.append(f"{i}{j}")
+
+        if len(nii_files) == 0:
             nii_dir = f"{pt_dir}Processed/11_nifti/"
-            nii_files.append(find_karawun(pt_dir, 't1'))
-            nii_files.append(find_karawun(pt_dir, 'extracted_b0'))
+            files = os.listdir(nii_dir)
+            for j in files:
+                if 't1' in j.lower():
+                    nii_files.append(f"{nii_dir}{j}")
+
             
-        create_mask(pt_id, pt_dir, nii_files)
+        create_mask(pt_id, pt_dir, nii_files, 'debug')
         tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir)
-        registration(pt_dir, nii_files, t1_dcm)
+        gen_tracks = gentck(pt_dir, 'debug')
+        registration(pt_dir, template_file)
 
 
 
@@ -245,6 +257,14 @@ def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
 
 
 def no_debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
+        
+    processed_dir = f"{pt_dir}Processed"
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    nii_files = []
+    
+    template_file = []
 
     if mask_skip == 'no':
     
@@ -406,20 +426,32 @@ def no_debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
         run(shview_csf_cmd)
         print()
         
-        create_mask(pt_id, pt_dir, nii_files)
-        tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir)
-        registration(pt_dir, nii_files, t1_dcm)
+        create_mask(pt_id, pt_dir, nii_files, 'no_debug')
+        tensor_estimation(pt_dir, DWI_shell, 'no_debug')
+        gen_tracks = gentck(pt_dir, 'no_debug')
+        registration(pt_dir, template_file)
         
     else:
     
-        if len(nii_files) != 0:
+        if len(template_file) == 0:
+            for i in bvalue_folders:
+                if 't1' in i or 'T1' in i:
+                    files = os.listdir(i)
+                    for j in files:
+                        template_file.append(f"{i}{j}")
+                        
+        print(template_file)
+    
+        if len(nii_files) == 0:
             nii_dir = f"{pt_dir}Processed/11_nifti/"
-            nii_files.append(find_karawun(pt_dir, 't1'))
-            nii_files.append(find_karawun(pt_dir, 'extracted_b0'))
+            files = os.listdir(nii_dir)
+            for j in files:
+                if 't1' in j.lower():
+                    nii_files.append(f"{nii_dir}{j}")
+
             
-        create_mask(pt_id, pt_dir, nii_files)
-        tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir)
-        registration(pt_dir, nii_files, t1_dcm)
-#
+        create_mask(pt_id, pt_dir, nii_files, 'no_debug')
+        tensor_estimation(pt_dir, DWI_shell, 'no_debug')
+        gen_tracks = gentck(pt_dir, 'no_debug')
+        registration(pt_dir, template_file)
+

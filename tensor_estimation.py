@@ -58,6 +58,7 @@ def tensor_estimation(pt_dir, DWI_shell, debug):
             run(mrconv_cmd)
             mrcat_cmd = f"mrcat {csf_fod} {gm_fod} {wm_fod_int} {tissue_vf}"
             run(mrcat_cmd)
-            mrview_cmd = f"mrview -mode 2 -load {tissue_vf} -interpolation 0"
-            run(mrview_cmd)
+            if debug == 'debug':
+                mrview_cmd = f"mrview -mode 2 -load {tissue_vf} -interpolation 0"
+                run(mrview_cmd)
 

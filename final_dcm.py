@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-def final_dicom_conversion(volume_directory, t1_dicom, output_file):
+def final_dicom_conversion(dcm_directory, t1_dicom, output_file):
 
     def separate_images(pixel_data, rows, columns, bits_allocated, samples_per_pixel):
         image_size = rows * columns * bits_allocated // 8
@@ -31,8 +31,8 @@ def final_dicom_conversion(volume_directory, t1_dicom, output_file):
         return images
 
     filelist = []
-    for i in os.listdir(directory):
-        filelist.append(f"{os.path.split(directory)[0]}/{i}")
+    for i in os.listdir(dcm_directory):
+        filelist.append(f"{os.path.split(dcm_directory)[0]}/{i}")
 
     filelist.sort()
 

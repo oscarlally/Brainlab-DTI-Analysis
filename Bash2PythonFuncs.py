@@ -218,7 +218,7 @@ def test_image(convert_files, test_file):
 
 
 
-def masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd):
+def masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug):
     
     current_dir = os.getcwd()
     run(dwi_cmd)
@@ -237,14 +237,17 @@ def masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd):
     bet_cmd = f"bet {b0_extract_nii} {b0_upsamp} -n -m -f {f} -g {g}"
     run(bet_cmd)
     
-    print('Check if the mask has worked.  If it has not, re-run this script and skip to masking, or run the check_mask function in the mask.py file')
-    fsleyes_path = os.environ.get('FSLDIR')
-    fsleyes_path = f"{fsleyes_path}/bin/"
-    os.chdir(fsleyes_path)
-    fsl_cmd = f"fsleyes {b0_extract_nii} {b0_upsamp_mask}"
-    subprocess.run(fsl_cmd.split())
+    if debug == 'debug':
     
-    os.chdir(current_dir)
+        print('Check if the mask has worked.  If it has not, re-run this script and skip to masking, or run the check_mask function in the mask.py file')
+        fsleyes_path = os.environ.get('FSLDIR')
+        fsleyes_path = f"{fsleyes_path}/bin/"
+        os.chdir(fsleyes_path)
+        fsl_cmd = f"fsleyes {b0_extract_nii} {b0_upsamp_mask}"
+        subprocess.run(fsl_cmd.split())
+        os.chdir(current_dir)
+
+        
     os.rename(f"{os.getcwd()}/b0_upsamp_mask.nii.gz", f"{os.getcwd()}/mask_final.nii.gz")
     with open('mask_params.txt', 'a') as f:
         f.write(f"For the mask for patient {pt_id} the g-value is {g} and f-value is {g}")
@@ -309,7 +312,7 @@ def get_counts(tck_image):
    
    
     
-def convert_tracts(pt_dir):
+def convert_tracts(pt_dir, debug):
 
     nii_dir = f"{pt_dir}Processed/11_nifti/"
     tract_dir = f"{pt_dir}Processed/9_tract/"
@@ -332,8 +335,9 @@ def convert_tracts(pt_dir):
             run(tck_to_mif)
             N_tracts = get_counts(file)
             run(f"mrcalc {mif_file} {N_tracts} -div {norm_file}")
-            mrview_cmd = f"mrview -mode 2 -load {t1_file} -interpolation 0 -overlay.load {norm_file} -comments 0"
-            run(mrview_cmd)
+            if debug == 'debug':
+                mrview_cmd = f"mrview -mode 2 -load {t1_file} -interpolation 0 -overlay.load {norm_file} -comments 0"
+                run(mrview_cmd)
             norm_nii_file = f"{nii_dir}{i.split('.')[0]}_NORM.nii"
             run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2")
             

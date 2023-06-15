@@ -1,4 +1,4 @@
-from Bash2PythonFuncs import zero_test, karawun_run, get_transform_matrix, register, run
+from Bash2PythonFuncs import zero_test, karawun_run, register, run
 from final_dcm import final_dicom_conversion
 import os
 import subprocess
@@ -7,11 +7,11 @@ import subprocess
 """After masking"""
 
 
-def registration(pt_dir, nii_files, dcm_template):
+def registration(pt_dir, template_file):
 
     nii_dir = f"{pt_dir}Processed/11_nifti/"
-    dcm_dir = f"{pt_dir}Processed/12_volumes/"
-    final_dir = f"{pt_dir}Processed/14_dicom/"
+    dcm_dir = f"{pt_dir}Processed/12_dicom/"
+    final_dir = f"{pt_dir}Processed/14_volume/"
     
     binarised_object = f"{nii_dir}binarised_object.nii.gz"
     t1_object = f"{nii_dir}t1_object.nii.gz"
@@ -65,13 +65,13 @@ def registration(pt_dir, nii_files, dcm_template):
     run(mult_3_cmd)
     run(add_cmd)
     
-    dcm_conversion = karawun_run(pt_dir, dcm_template, t1_burned, dcm_dir, t1_nii)
+    dcm_conversion = karawun_run(pt_dir, template_file[0], t1_burned, dcm_dir, t1_nii)
     
     dcm_dir = f"{dcm_dir}t1_burned/"
 
     modified_dicom_path = f"{final_dir}Brainlab_Object.dcm"
 
-    final_dicom_conversion(dcm_dir, dcm_template, modified_dicom_path)
+    final_dicom_conversion(dcm_dir, template_file[0], modified_dicom_path)
     
     
     
@@ -116,3 +116,4 @@ def registration(pt_dir, nii_files, dcm_template):
     print(result_str)
    
    
+

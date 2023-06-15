@@ -14,7 +14,7 @@ from Bash2PythonFuncs import find_dir, masking
 
 
 
-def create_mask(pt_id, pt_dir, nii_list):
+def create_mask(pt_id, pt_dir, nii_list, debug):
 
 
     os.chdir(f"{pt_dir}Processed/")
@@ -36,7 +36,7 @@ def create_mask(pt_id, pt_dir, nii_list):
         mr_conv_1_cmd = f"mrconvert -strides -1,2,3 {b0_extract} {b0_1_extract}"
         mr_conv_2_cmd = f"mrconvert -strides -1,2,3 {b0_1_extract} {b0_extract_nii}"
 
-        masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd)
+        masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug)
         continue_yn = input('Mask correct and continue with analysis? (y/n): ')
         if continue_yn.lower() != 'y':
             rmtree(f"{pt_dir}Processed/6_mask/")
