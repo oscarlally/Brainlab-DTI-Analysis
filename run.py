@@ -46,6 +46,7 @@ DWI_multishell = input('Is the data multi-shelled? (y/n): ')
 pt_dir = find_dir(pt_id, home_dir)
 pt_dir = f"{pt_dir}/raw/"
 masking_list = []
+gentrck_list = []
 
 
 # INITIALISATION
@@ -81,19 +82,32 @@ else:
 
 while True:
     masking = input("Skip to brain masking? (y/n): ")
+    gentrck = input("Skip to tract generation? (y/n: ")
 
-    if masking.lower() == 'y':
-        print("Skipping all processing steps, going straight to response function")
+    if masking.lower() == 'y' and gentrck.lower() == 'y':
+        print("Skipping all processing steps, going straight to tract generation")
         mask_skip = 'yes'
+        gentrck_skip = 'yes'
         masking_list.append(mask_skip)
+        gentrck_list.append(gentrck_skip)
+        break
+    elif masking.lower() == 'y'and gentrck.lower() == 'n':
+        print("Skipping all processing steps, going straight to mask creation")
+        mask_skip = 'yes'
+        gentrck_skip = 'no'
+        masking_list.append(mask_skip)
+        gentrck_list.append(gentrck_skip)
         break
     elif masking.lower() == 'n' and remove != 1:
         print("Running all processing steps")
         mask_skip = 'no'
+        gentrck_skip = 'no'
         masking_list.append(mask_skip)
+        gentrck_list.append(gentrck_skip)
         break
     else:
         print("Invalid response")
+        
     
         
 while True:
@@ -101,11 +115,11 @@ while True:
 
     if debug_binary.lower() == 'y':
         print("Running in debug mode")
-        debug(masking_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
+        debug(masking_list[0], gentrck_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
         break
     elif debug_binary.lower() == 'n':
         print("Running without debug steps")
-        no_debug(masking_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
+        no_debug(masking_list[0], gentrck_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
         break
     else:
         print("Invalid response")
@@ -115,29 +129,3 @@ while True:
 
 
 
-
-
-
-
-
-
-
-
-"Things to work on"
-
-# Add another function in debug that does is just a sanity check
-
-
-
-
-
-
-
-"""Old"""
-
-# Output the amount of volumes there are when you type in 2400
-# Output denoise image in step 2 - first image is the residuals and the denoise and original
-# denoise and degibbs for second check
-
-# for the default value in N_b0_pa find the minimum of the b0_AP and b0_PA folder
-# MRView for all of the AP PA stuff

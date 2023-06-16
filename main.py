@@ -26,7 +26,7 @@ denoise_resid_file = []
 dwi_PA_denoise = []
 
 
-def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
+def debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
     
     processed_dir = f"{pt_dir}Processed"
     
@@ -240,12 +240,17 @@ def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
             for j in files:
                 if 't1' in j.lower():
                     nii_files.append(f"{nii_dir}{j}")
-
+                    
+        if gentrck_skip == 'no':
+            create_mask(pt_id, pt_dir, nii_files, 'debug')
+            tensor_estimation(pt_dir, DWI_shell, 'debug')
+            gen_tracks = gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file)
             
-        create_mask(pt_id, pt_dir, nii_files, 'debug')
-        tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir, 'debug')
-        registration(pt_dir, template_file)
+        else:
+            tensor_estimation(pt_dir, DWI_shell, 'debug')
+            gen_tracks = gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file)
 
 
 
@@ -255,8 +260,7 @@ def debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
 
 
 
-
-def no_debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
+def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
         
     processed_dir = f"{pt_dir}Processed"
     
@@ -450,8 +454,14 @@ def no_debug(mask_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
                     nii_files.append(f"{nii_dir}{j}")
 
             
-        create_mask(pt_id, pt_dir, nii_files, 'no_debug')
-        tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-        gen_tracks = gentck(pt_dir, 'no_debug')
-        registration(pt_dir, template_file)
+        if gentrck_skip == 'no':
+            create_mask(pt_id, pt_dir, nii_files, 'no_debug')
+            tensor_estimation(pt_dir, DWI_shell, 'no_debug')
+            gen_tracks = gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file)
+            
+        else:
+            tensor_estimation(pt_dir, DWI_shell, 'no_debug')
+            gen_tracks = gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file)
 
