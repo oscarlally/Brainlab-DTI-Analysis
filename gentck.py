@@ -31,7 +31,8 @@ def gentck(pt_dir, debug):
                 'R-latCalc.mif',
                 'L-latVentr',
                 'R-latVentr',
-                'OR_exclude.mif']
+                'OR_exclude.mif'
+                'other.mif']
 
 
     while True:
@@ -121,6 +122,8 @@ def gentck(pt_dir, debug):
     OR_exclude = f"{processed_path}/10_ROI/OR_exclude.mif"
     luni_tck = f"{processed_path}/9_tract/mrtrix3-L-LGN_EX_UNI.tck"
     runi_tck = f"{processed_path}/9_tract/mrtrix3-R-LGN_EX_UNI.tck"
+    other_mif = f"{processed_path}/10_ROI/other.mif"
+    other_tck = f"{processed_path}/9_tract/mrtrix3_other.tck"
     
     
 
@@ -136,14 +139,14 @@ def gentck(pt_dir, debug):
         subprocess.run(command, shell=True)
         
         if os.path.isfile(f"{processed_path}/10_ROI/AF_L.mif"):
-            run("tckgen {wm_fod} {af_tck} -seed_image {af_l} -include {slf_l} -include {broca_l} -step 1.75 -angle 45 -cutoff 0.05")
-            run("tckedit {af_tck} {af_tck_ex} -exclude {af_exclude}")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {af_tck} -tractography.load {af_tck_ex} -comments 0")
+            run(f"tckgen {wm_fod} {af_tck} -seed_image {af_l} -include {slf_l} -include {broca_l} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"tckedit {af_tck} {af_tck_ex} -exclude {af_exclude}")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {af_tck} -tractography.load {af_tck_ex} -comments 0")
             gen_tracks.append(af_tck, af_tck_ex)
         if os.path.isfile(f"{processed_path}/10_ROI/AF_R.mif"):
-            run("tckgen {wm_fod} {af_tck_r} -seed_image {af_r} -include {slf_r} -include {broca_r} -step 1.75 -angle 45 -cutoff 0.05")
-            run("tckedit {af_tck} {af_tck_ex_r} -exclude {af_exclude}")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load 9_tract/mrtrix3")
+            run(f"tckgen {wm_fod} {af_tck_r} -seed_image {af_r} -include {slf_r} -include {broca_r} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"tckedit {af_tck} {af_tck_ex_r} -exclude {af_exclude}")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load 9_tract/mrtrix3")
             gen_tracks.append(af_tck, af_tck_ex_r)
 
 
@@ -157,14 +160,14 @@ def gentck(pt_dir, debug):
         
         if os.path.isfile(f"{processed_path}/10_ROI/RHandM1.mif"):
             print("Making Right hand motor area tracts")
-            run("tckgen {wm_fod} {mha_r_tck} -seed_image {rhm1} -include {lped} -step 1.75 -angle 45 -cutoff 0.05 -seed_unidirectional -force")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {mha_r_tck}")
+            run(f"tckgen {wm_fod} {mha_r_tck} -seed_image {rhm1} -include {lped} -step 1.75 -angle 45 -cutoff 0.05 -seed_unidirectional -force")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {mha_r_tck}")
             gen_tracks.append(mha_r_tck)
 
         if os.path.isfile(f"{processed_path}/10_ROI/LHandM1.mif"):
             print("Making left hand motor area tracts")
-            run("tckgen {wm_fod} {mha_l_tck} -seed_image {lhm_1} -include {rped} -step 1.75 -angle 45 -cutoff 0.05 -seed_unidirectional -force")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load 9_tract/{mha_l_tck}")
+            run(f"tckgen {wm_fod} {mha_l_tck} -seed_image {lhm_1} -include {rped} -step 1.75 -angle 45 -cutoff 0.05 -seed_unidirectional -force")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load 9_tract/{mha_l_tck}")
             gen_tracks.append(mha_l_tck)
             
             
@@ -178,13 +181,13 @@ def gentck(pt_dir, debug):
         print("If RhandS1 or LhandS1 exist, making tracks will be attempted")
 
         if os.path.isfile(rhs1):
-            run("tckgen {wm_fod} {rsha_tck} -seed_image {rhs1} -include {l_thal} -step 1.75 -angle 45 -cutoff 0.05")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {rsha_tck} -comments 0")
+            run(f"tckgen {wm_fod} {rsha_tck} -seed_image {rhs1} -include {l_thal} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {rsha_tck} -comments 0")
             gen_tracks.append(rsha_tck)
 
         if os.path.isfile("10_ROI/LhandS1.mif"):
-            run("tckgen {wm_fod} {lsha_tck} -seed_image {lhs1} -include {r_thal} -step 1.75 -angle 45 -cutoff 0.05")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {lsha_tck} -comments 0")
+            run(f"tckgen {wm_fod} {lsha_tck} -seed_image {lhs1} -include {r_thal} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {lsha_tck} -comments 0")
             gen_tracks.append(lsha_tck)
 
 
@@ -199,20 +202,27 @@ def gentck(pt_dir, debug):
         
         if os.path.isfile(llgn):
             print("Drawing on LEFT side")
-            run("tckgen {wm_fod} {llgn} -seed_image {llgn} -include {llc} -include {llv} -step 1.75 -angle 45 -cutoff 0.05")
-            run("tckedit {luni_tck} -exclude {OR_exclude} -seed_unidirectional")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {llgn} -comments 0")
+            run(f"tckgen {wm_fod} {llgn} -seed_image {llgn} -include {llc} -include {llv} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"tckedit {luni_tck} -exclude {OR_exclude} -seed_unidirectional")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {llgn} -comments 0")
             gen_tracks.append(luni_tck)
 
         if os.path.isfile(rlgn):
-            run("tckgen {wm_fod} {rlgn} -seed_image {rlgn} -include {rlc} -include {rlv} -step 1.75 -angle 45 -cutoff 0.05")
-            run("tckedit {runi_tck} -exclude {OR_exclude} -seed_unidirectional")
-            run("mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {rlgn} -comments 0")
+            run(f"tckgen {wm_fod} {rlgn} -seed_image {rlgn} -include {rlc} -include {rlv} -step 1.75 -angle 45 -cutoff 0.05")
+            run(f"tckedit {runi_tck} -exclude {OR_exclude} -seed_unidirectional")
+            run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {rlgn} -comments 0")
             gen_tracks.append(runi_tck)
 
 
     elif tract_choice.lower() == 's':
         print("Process skipped")
+        
+        
+    elif tract_choice.lower() == 'other':
+        print("Drawing other ROI")
+        run(f"tckgen {wm_fod} {other_tck} -seed_image {other_mif} -step 1.75 -angle 45 -cutoff 0.05")
+        run(f"mrview -mode 2 -load {fa} -interpolation 0 -tractography.load {other_tck} -comments 0")
+        gen_tracks.append(other_tck)
         
         
     else:

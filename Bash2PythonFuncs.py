@@ -324,23 +324,25 @@ def convert_tracts(pt_dir, debug):
         if 't1' in i.lower():
             t1_file = f"{mif_orig_filepath}{i}"
 
-    
-    tract_files = os.listdir(tract_dir)
-    for i in tract_files:
+    tract_files = []
+    dir_files = os.listdir(tract_dir)
+    for i in dir_files:
         if '.tck' in i:
-            file = f"{tract_dir}{i}"
-            mif_file = f"{tract_dir}{i.split('.')[0]}.mif"
-            norm_file = f"{tract_dir}{i.split('.')[0]}_NORM.mif"
-            tck_to_mif = f"tckmap -template {fa_tensor} {file} {mif_file}"
-            run(tck_to_mif)
-            N_tracts = get_counts(file)
-            run(f"mrcalc {mif_file} {N_tracts} -div {norm_file}")
-            if debug == 'debug':
-                mrview_cmd = f"mrview -mode 2 -load {t1_file} -interpolation 0 -overlay.load {norm_file} -comments 0"
-                run(mrview_cmd)
-            norm_nii_file = f"{nii_dir}{i.split('.')[0]}_NORM.nii"
-            run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2")
-            
+            tract_files.append(f"{tract_dir}{i}")
+    
+    for i in tract_files:
+        mif_file = f"{tract_dir}{i.split('.')[0]}.mif"
+        norm_file = f"{tract_dir}{i.split('.')[0]}_NORM.mif"
+        tck_to_mif = f"tckmap -template {fa_tensor} {file} {mif_file}"
+        run(tck_to_mif)
+        N_tracts = get_counts(i)
+        run(f"mrcalc {mif_file} {N_tracts} -div {norm_file}")
+        if debug == 'debug':
+            mrview_cmd = f"mrview -mode 2 -load {t1_file} -interpolation 0 -overlay.load {norm_file} -comments 0"
+            run(mrview_cmd)
+        norm_nii_file = f"{nii_dir}{i.split('.')[0]}_NORM.nii"
+        run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2")
+    
     nii_files = os.listdir(nii_dir)
     for i in nii_files:
         if 't1' in i.lower():
