@@ -1,2 +1,3 @@
 pydicom
 itertools
+nibabel

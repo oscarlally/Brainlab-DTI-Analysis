@@ -71,9 +71,10 @@ if os.path.isdir(pt_dir):
         os.makedirs("9_tract/")
         os.makedirs("10_ROI/")
         os.makedirs("11_nifti/")
-        os.makedirs("12_dicom")
-        os.makedirs("13_misc/")
-        os.makedirs("14_volume/")
+        os.makedirs("12_overlays")
+        os.makedirs("13_dicom")
+        os.makedirs("14_misc/")
+        os.makedirs("15_volume/")
 else:
     print("Error: Folder for the entered patient ID does not exists.")
     print("Exit analysis pipeline due to no pt data found")

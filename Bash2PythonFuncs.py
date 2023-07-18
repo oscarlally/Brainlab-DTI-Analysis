@@ -140,7 +140,7 @@ def run_fsl(cmd, pt_dir):
         output_file = 'extracted_b0.txt'
     else:
         output_file = 'object.txt'
-    output_dir = f"{pt_dir}Processed/13_misc/"
+    output_dir = f"{pt_dir}Processed/14_misc/"
     current_dir = os.getcwd()
     with open(f"{output_dir}{output_file}", 'w') as f:
         process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
@@ -260,7 +260,6 @@ def zero_test(file_1, file_2):
         lines1 = f1.readlines()
         lines2 = f2.readlines()
     result = [line for line in lines1 if line not in lines2]
-    print(result)
     if len(result) > 4:
         print()
         print('The headers are not the same')
@@ -373,7 +372,7 @@ def get_transform_matrix(nii_list):
 def register(pt_dir, object):
 
     nii_dir = f"{pt_dir}Processed/11_nifti/"
-    misc_dir = f"{pt_dir}Processed/13_misc/"
+    misc_dir = f"{pt_dir}Processed/14_misc/"
     b0_extract_nii = f"{nii_dir}extracted_b0.nii"
     t1_bet_nii = f"{nii_dir}t1_bet_mask.nii.gz"
     
@@ -419,8 +418,10 @@ def register(pt_dir, object):
         return 1, registered_object
         
         
-
-
+        
+def skew(array, skew_factor):
+    skewed_array = np.where(array <= 0, 0, np.where(array >= 1, 1, 1 - (1 - array) ** skew_factor))
+    return skewed_array
 
 
 

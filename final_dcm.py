@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-def final_dicom_conversion(dcm_directory, t1_dicom, output_file):
+def final_dicom_conversion(dcm_directory, t1_dicom, output_file, max_value = 4095):
 
     def separate_images(pixel_data, rows, columns, bits_allocated, samples_per_pixel):
         image_size = rows * columns * bits_allocated // 8
@@ -61,13 +61,77 @@ def final_dicom_conversion(dcm_directory, t1_dicom, output_file):
         else:
 
             a[0] = a[0] + images[0]
+            
 
 
     dicom_file = pydicom.dcmread(t1_dicom)
-
+    
     dicom_file.PixelData = a[0]
 
     dicom_file.save_as(output_file)
+    
+
+    def contrast_stretching(pixel_array, desired_max=4096):
+        min_value = pixel_array.min()
+        max_value = pixel_array.max()
+
+        # Calculate the contrast stretching mapping
+        pixel_values = (pixel_array - min_value) * (desired_max - 1) / (max_value - min_value)
+        pixel_values = np.clip(pixel_values, 0, desired_max - 1)
+        pixel_values = pixel_values.astype(np.uint16)
+
+        return pixel_values
+
+    def histogram_equalization(pixel_array, desired_max=4096):
+        # Calculate the cumulative distribution function
+        hist, bin_edges = np.histogram(pixel_array.flatten(), bins=range(0, 4096))
+        cdf = hist.cumsum()
+
+        # Normalize the cdf
+        cdf_normalized = (cdf - cdf.min()) * float(desired_max - 1) / (cdf.max() - cdf.min())
+
+        # Use linear interpolation to map the pixel values
+        pixel_values = np.interp(pixel_array.flatten(), bin_edges[:-1], cdf_normalized)
+        pixel_values = np.clip(pixel_values, 0, desired_max - 1)
+        pixel_values = pixel_values.astype(np.uint16)
+
+        return pixel_values.reshape(pixel_array.shape)
+
+    def rescale_dicom_image(dicom_file_path, desired_max=4096):
+        # Read the DICOM image
+        dicom_dataset = pydicom.dcmread(dicom_file_path)
+
+        # Get the pixel data as a NumPy array
+        pixel_array = dicom_dataset.pixel_array.astype(float)
+
+        # Check if the maximum pixel value is greater than the desired maximum
+        if pixel_array.max() > desired_max:
+            # Apply contrast stretching to rescale the pixel values
+            stretched_pixel_array = contrast_stretching(pixel_array, desired_max)
+
+            # Apply histogram equalization to the stretched pixel values
+            scaled_pixel_array = histogram_equalization(stretched_pixel_array, desired_max)
+
+            # Update the pixel data in the DICOM dataset
+            dicom_dataset.PixelData = scaled_pixel_array.tobytes()
+
+            # Update the window width and window center
+            dicom_dataset.WindowWidth = desired_max
+            dicom_dataset.WindowCenter = desired_max / 2
+
+            # Save the modified DICOM dataset back to a new file
+            new_dicom_file_path = output_file
+            dicom_dataset.save_as(new_dicom_file_path)
+        else:
+            print("No rescaling needed. Maximum pixel value is not greater than the desired maximum.")
+
+    
+    rescale_dicom_image(output_file, max_value)
+
+
+
+
+
 
 
 
