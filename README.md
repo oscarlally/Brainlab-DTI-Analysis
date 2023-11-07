@@ -16,4 +16,4 @@ respectively.
 
 To run this script, navigate to the directory that you have saved this code in, and run the following command:
 
-python3 run.py
+python3 run.py --debug (y/n), depending on if you want to run the script in debug mode or not.

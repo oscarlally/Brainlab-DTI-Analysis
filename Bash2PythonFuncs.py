@@ -368,7 +368,17 @@ def get_transform_matrix(nii_list):
     
     return transform, std_output
     
-    
+
+def change_thresh(nii_dir, object_name, thresh):
+
+    thresholded_obj = f"{nii_dir}{object_name}_registered_threshold.nii.gz"
+    chtrsh_cmd = f"fslmaths {nii_dir}{object_name}_registered.nii.gz \
+                  -thr {thresh} {thresholded_obj}"
+    view_cmd = f"fsleyes {thresholded_obj}"
+    run(thresholded_obj)
+    run(view_cmd)
+    return thresholded_obj
+
 
 def register(pt_dir, object):
 
@@ -393,13 +403,11 @@ def register(pt_dir, object):
     else:
         object_nii = objects[0]
         object_name = names[0].split('.')[0]
-        
-        
+
     registered_object = f"{nii_dir}{object_name}_registered.nii.gz"
     
     fslhd_cmd_1 = f"fslhd {b0_extract_nii}"
     fslhd_cmd_2 = f"fslhd {object_nii}"
-
 
     run_fsl(fslhd_cmd_1, pt_dir)
     run_fsl(fslhd_cmd_2, pt_dir)
@@ -413,10 +421,23 @@ def register(pt_dir, object):
     trans_cmd_2 = f"flirt -in {object_nii} -ref {t1_bet_nii} -out {registered_object} -init {misc_dir}transform.mat -applyxfm"
     run(trans_cmd_2)
 
+    while True:
+        print()
+        thresh = input('Please type in the threshold that you want to try: ')
+
+        thresholded = change_thresh(nii_dir, object_name, thresh)
+
+        happy = input('Do you want to re-threshold? (Type "y" for yes, "n" for no): ')
+
+        if happy == 'n':
+            break
+
+    """Potential for problems here given that the thresholded object is not being subtracted"""
+
     if identical == 0:
-        return 0, registered_object
+        return 0, thresholded
     else:
-        return 1, registered_object
+        return 1, thresholded
         
         
         

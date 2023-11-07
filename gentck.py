@@ -1,11 +1,52 @@
 from Bash2PythonFuncs import run, convert_tracts
 from roi_tck import roi_list, tck_list
-import tkinter as tk
 from tkinter import ttk
+import subprocess
+import tkinter as tk
 
 def gentck(pt_dir, debug):
 
     gen_tracks = []
+    processed_path = f"{pt_dir}Processed"
+
+    while True:
+
+        print()
+        print()
+        choice = input(
+            'Do you need to draw ROIs? If so, please save in the 9_ROI folder in the patient processed directory (y/n). ')
+        print('Please save the ROI under the following names for the script to be able to find them')
+        for i in roi_list:
+            print(i)
+
+        if choice.lower() == 'y':
+            subprocess.run('echo -e "Opening mrview"', shell=True)
+            message = "Step 8: Draw ROIs"
+            message = "\033[32m" + message + "\033[0m"
+            command = "echo {}".format(message)
+            subprocess.run(command, shell=True)
+
+            # step size should be 0.5xvoxelsize (currently set to 1)
+            fa = f"{processed_path}/7_tensor/fa.mif"
+            ev = f"{processed_path}/7_tensor/ev.mif"
+            dwi_tensor = f"{pt_dir}7_tensor/dwi_tensor.mif"
+
+            view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
+            run(view_cmd)
+
+            break
+        elif choice.lower() == 'n':
+            print('Continue with analysis using ROIs already generated')
+            break
+        else:
+            message = "Invalid response"
+            message = "\033[31m" + message + "\033[0m"
+            command = "echo {}".format(message)
+            subprocess.run(command, shell=True)
+
+    print()
+    print()
+    message = "Generating tracks, please fill out the form."
 
     def cmd_part_check(cmdlet):
         condition_1 = 'None'
@@ -15,7 +56,6 @@ def gentck(pt_dir, debug):
         else:
             return cmdlet
 
-    processed_path = f"{pt_dir}Processed"
     wm_fod = f"{processed_path}/8_msmt/wm_fod.mif"
     fa = f"{processed_path}/7_tensor/fa.mif"
     ev = f"{processed_path}/7_tensor/ev.mif"
@@ -85,6 +125,7 @@ def gentck(pt_dir, debug):
         else:
             exclude_cmd = f"tckedit {tract} {exclude_1} -exclude {exclude_2} {cmd_8}"
         stream_cmd = f"tckedit {tract} {tract.replace('.', f'_{streamlines}.')} - number {streamlines}"
+        """Can add the diffusion as well just for display"""
         view_cmd = f"mrview -mode 2 -load {eval(map)} -interpolation 0 -tractography.load {tract} -comments 0"
         gen_tracks.append(f"{tract.replace('.', f'_{streamlines}.')}")
         root.destroy()
@@ -179,26 +220,19 @@ def gentck(pt_dir, debug):
 
     main_cmd = "".join(cmd_list)
 
-    return [main_cmd, exclude_cmd, stream_cmd, view_cmd]
+    run(main_cmd)
 
-    # run(main_cmd)
-    #
-    # convert_tracts(pt_dir, debug)
-    #
-    # if cmd_9 != 'None':
-    #
-    #     run(exclude_cmd)
-    #
-    # run(stream_cmd)
-    #
-    # if debug == 'debug':
-    #
-    #     run(view_cmd)
-    #
-    # return gen_tracks
+    convert_tracts(pt_dir, debug)
 
-command_list = gentck('/Users/oscarlally/Desktop/CCL/23456/raw/', 'debug')
+    if cmd_9 != 'None':
 
-for i in command_list:
+        run(exclude_cmd)
 
-    print(i)
+    run(stream_cmd)
+
+    if debug == 'debug':
+
+        run(view_cmd)
+
+    return gen_tracks
+

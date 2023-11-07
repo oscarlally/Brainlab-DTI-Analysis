@@ -92,10 +92,12 @@ def run_function(debug_binary):
                 gentrck_list.append(gentrck_skip)
                 break
             else:
-                print("Invalid response")
+                print("Invalid response.  Please re-run the code with a correct response.")
+                exit(1)
 
         else:
-            print("Invalid response")
+            print("Invalid response.  Please re-run the code with a correct response.")
+            exit(1)
             
         
             
@@ -110,7 +112,7 @@ def run_function(debug_binary):
             no_debug(masking_list[0], gentrck_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
             break
         else:
-            print("Invalid response")
+            exit(1)
         
         
 
