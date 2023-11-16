@@ -12,12 +12,12 @@ def gentck(pt_dir, debug):
     while True:
 
         print()
-        print()
-        choice = input(
-            'Do you need to draw ROIs? If so, please save in the 9_ROI folder in the patient processed directory (y/n). ')
-        print('Please save the ROI under the following names for the script to be able to find them')
         for i in roi_list:
             print(i)
+        print()
+        choice = input(
+            'Do you need to draw ROIs? If so, please save in the 9_ROI folder in the patient Processed directory with one of the filenames above (y/n). ')
+        print('Please save the ROI under the following names for the script to be able to find them')
 
         if choice.lower() == 'y':
             subprocess.run('echo -e "Opening mrview"', shell=True)
@@ -47,14 +47,7 @@ def gentck(pt_dir, debug):
     print()
     print()
     message = "Generating tracks, please fill out the form."
-
-    def cmd_part_check(cmdlet):
-        condition_1 = 'None'
-        condition_2 = 'n/a'
-        if condition_1 in cmdlet or condition_2.lower() in cmdlet:
-            return ''
-        else:
-            return cmdlet
+    print(message)
 
     wm_fod = f"{processed_path}/8_msmt/wm_fod.mif"
     fa = f"{processed_path}/7_tensor/fa.mif"
@@ -63,7 +56,7 @@ def gentck(pt_dir, debug):
 
     if debug == 'debug':
         view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
-    run(view_cmd)
+        run(view_cmd)
 
     cmd_1 = None
     cmd_2 = None
@@ -92,41 +85,68 @@ def gentck(pt_dir, debug):
         nonlocal stream_cmd
         nonlocal view_cmd
 
+        roi_path = f"{processed_path}/9_ROI/"
         fa = f"{processed_path}/7_tensor/fa.mif"
         ev = f"{processed_path}/7_tensor/ev.mif"
         tract = f"{processed_path}/10_tract/{tract_combo.get()}"
-        seed_image = f"{processed_path}/9_ROI/{seed_image_combo.get()}"
-        include_1 = f"{processed_path}/9_ROI/{include_1_combo.get()}"
-        include_2 = f"{processed_path}/9_ROI/{include_2_combo.get()}"
+        seed_image = f"{roi_path}{seed_image_combo.get()}"
+        include_1 = include_1_combo.get()
+        include_2 = include_2_combo.get()
         step = str(step_var.get())
         angle = str(angle_var.get())
         cutoff = str(cutoff_var.get())
-        seed = f"{processed_path}/9_ROI/{seed_combo.get()}"
-        exclude_1 = f"{processed_path}/9_ROI/{str(exclude_1_combo.get())}"
-        exclude_2 = f"{processed_path}/9_ROI/{str(exclude_2_combo.get())}"
+        seed = f"{seed_combo.get()}"
+        exclude_1 = exclude_1_combo.get()
+        exclude_2 = exclude_2_combo.get()
         streamlines = str(streamlines_var.get())
         map = map_combo.get().lower()
 
         cmd_1 = f"tckgen {wm_fod} {tract} "
         cmd_2 = f"-seed_image {seed_image} "
-        cmd_3 = f"-include {include_1} "
-        cmd_4 = f"-include {include_2} "
-        cmd_5 = f"-step {step} "
-        cmd_6 = f"-angle {angle} "
-        cmd_7 = f"-cutoff {cutoff}"
-        cmd_8 = f"seed_{seed.lower()}"
-        cmd_9 = f"{exclude_1}"
-        cmd_10 = f"{exclude_2}"
-        cmd_11 = f"{streamlines}"
-        cmd_12 = f"{map.lower()}"
 
-        if seed.lower() != 'None':
-            exclude_cmd = f"tckedit {tract} {exclude_1} -exclude {exclude_2}"
+        if f"{include_1}" != '':
+            cmd_3 = f"-include {roi_path}{include_1} "
         else:
-            exclude_cmd = f"tckedit {tract} {exclude_1} -exclude {exclude_2} {cmd_8}"
-        stream_cmd = f"tckedit {tract} {tract.replace('.', f'_{streamlines}.')} - number {streamlines}"
+            cmd_3 = ''
+        if f"{include_2}" != '':
+            cmd_3 = f"-include {roi_path}{include_2} "
+        else:
+            cmd_4 = ''
+        if f"{step}" != '':
+            cmd_5 = f"-step {step} "
+        else:
+            cmd_5 = ''
+        if f"{angle}" != '':
+            cmd_6 = f"-angle {angle} "
+        else:
+            cmd_6 = ''
+        if f"{cutoff}" != '':
+            cmd_7 = f"-cutoff {cutoff} "
+        else:
+            cmd_7 = ''
+        if f"{seed}" != '':
+            cmd_8 = f"seed_{seed.lower()}"
+        else:
+            cmd_8 = ''
+        if f"{exclude_1}" != '':
+            cmd_9 = f"-exclude {roi_path}{exclude_1}"
+        else:
+            cmd_9 = ''
+        if f"{exclude_2}" != '':
+            cmd_10 = f"-exclude {roi_path}{exclude_2}"
+        else:
+            cmd_10 = ''
+        if f"{streamlines}" != '':
+            cmd_11 = f"-number {streamlines}"
+        else:
+            cmd_11 = ''
+        if cmd_11 != '':
+            stream_cmd = f"tckedit {tract} {tract.replace('.', f'_{streamlines}.')} {cmd_11}"
+        else:
+            stream_cmd = ''
         """Can add the diffusion as well just for display"""
         view_cmd = f"mrview -mode 2 -load {eval(map)} -interpolation 0 -tractography.load {tract} -comments 0"
+
         gen_tracks.append(f"{tract.replace('.', f'_{streamlines}.')}")
         root.destroy()
 
@@ -213,26 +233,33 @@ def gentck(pt_dir, debug):
 
     root.mainloop()
 
-    cmd_list = []
+    main_cmd = ''
+
+    print(cmd_3)
 
     for i in range(1, 9):
-        cmd_list.append(cmd_part_check(eval(f"cmd_{i}")))
+        if i == 1:
+            main_cmd = eval(f"cmd_{i}")
+        else:
+            if eval(f"cmd_{i}") != '':
+                main_cmd = main_cmd + eval(f"cmd_{i}")
 
-    main_cmd = "".join(cmd_list)
+    print(main_cmd)
 
     run(main_cmd)
 
-    convert_tracts(pt_dir, debug)
-
-    if cmd_9 != 'None':
+    if cmd_9 != '':
 
         run(exclude_cmd)
 
-    run(stream_cmd)
+    if stream_cmd != '':
+
+        run(stream_cmd)
 
     if debug == 'debug':
 
         run(view_cmd)
 
-    return gen_tracks
+    convert_tracts(pt_dir, debug)
+
 

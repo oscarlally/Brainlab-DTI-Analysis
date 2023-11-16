@@ -7,8 +7,6 @@ Created on 15/02/2023
 """
 
 import os
-import subprocess
-from shutil import rmtree
 
 from Bash2PythonFuncs import BC, test_image, masking, run, get_volumes, find_karawun
 from mask import create_mask
@@ -26,22 +24,28 @@ denoise_resid_file = []
 dwi_PA_denoise = []
 
 
-def debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
+def debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
+
+    method = None
+
+    if sum(skip_list) == 0:
+
+        method = 4
+
+    else:
+        method = skip_list.index(1) + 1
     
     processed_dir = f"{pt_dir}Processed"
-    
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     
     nii_files = []
     
     template_file = []
     
-    if mask_skip == 'no':
+    if method == 4:
     
         # Use convert folder to convert and then concat
         if not os.path.exists(f"{processed_dir}/1_convert/b_all.mif"):
             for i in bvalue_folders:
-                
                 if 't1' not in i and 'T1' not in i:
                     if 'PA' in i and 'flipped' not in i:
                         output = f"{processed_dir}/1_convert/rev_b0_PA.mif"
@@ -223,11 +227,11 @@ def debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
         
         create_mask(pt_id, pt_dir, nii_files, 'debug')
         tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gen_tracks = gentck(pt_dir, 'debug')
-        registration(pt_dir, template_file)
+        gentck(pt_dir, 'debug')
+        registration(pt_dir, template_file, 'debug')
         
     else:
-    
+
         if len(template_file) == 0:
             for i in bvalue_folders:
                 if 't1' in i or 'T1' in i:
@@ -243,16 +247,18 @@ def debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
                 if 't1' in j.lower():
                     nii_files.append(f"{nii_dir}{j}")
                     
-        if gentrck_skip == 'no':
+        if method == 1:
             create_mask(pt_id, pt_dir, nii_files, 'debug')
             tensor_estimation(pt_dir, DWI_shell, 'debug')
-            gen_tracks = gentck(pt_dir, 'debug')
-            registration(pt_dir, template_file)
+            gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file, 'debug')
             
-        else:
-            tensor_estimation(pt_dir, DWI_shell, 'debug')
-            gen_tracks = gentck(pt_dir, 'debug')
-            registration(pt_dir, template_file)
+        elif method == 2:
+            gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file, 'debug')
+
+        elif method == 3:
+            registration(pt_dir, template_file, 'debug')
 
 
 
@@ -262,17 +268,24 @@ def debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
 
 
 
-def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
+def no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
+
+    method = None
+
+    if sum(skip_list) == 0:
+
+        method = 4
+
+    else:
+        method = skip_list.index(1) + 1
         
     processed_dir = f"{pt_dir}Processed"
-    
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     
     nii_files = []
     
     template_file = []
 
-    if mask_skip == 'no':
+    if method == 4:
     
         # Use convert folder to convert and then concat
         if not os.path.exists(f"{processed_dir}/1_convert/b_all.mif"):
@@ -314,15 +327,8 @@ def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
             if 'pa' in i.lower():
                 pa_size_pre = get_volumes(f"{convert_dir}{i}")
                 
-                
-            
-    
-        print("DEBUG STEP: Check all images in b0 file look like the signal intensity of a b0 image")
-        b_size, test_bval = test_image(convert_files, test_file)
-        print(f"The test image (b{test_bval}) has {b_size} volumes.")
-        dwiextract_cmd = f"dwiextract {test_file[0]} {test_file[1]} -force"
-        run(dwiextract_cmd)
-        print("Concatenate data in 1_convert file")
+
+        print("Concatenating data into a single_convert file")
         output = f"{os.path.split(output)[0]}/b_all.mif"
         concat_file.append(output)
         BC('mrcat', convert_files, output, '-force')
@@ -422,20 +428,12 @@ def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
             dwi2response_cmd = f"dwi2response dhollander {dwi_eddy_file} {response_wm} {response_gm} {response_csf} -voxels {response_voxels} -force"
             run(dwi2response_cmd)
 
-        print("DEBUG STEP: Check the response functions and the voxel positions")
-        print(" The WM should go from sphere to flat. The GM and CSF should go from sphere to smaller sphere")
-        shview_wm_cmd = f"shview {response_wm}"
-        shview_gm_cmd = f"shview {response_gm}"
-        shview_csf_cmd = f"shview {response_csf}"
-        run(shview_wm_cmd)
-        run(shview_gm_cmd)
-        run(shview_csf_cmd)
         print()
         
         create_mask(pt_id, pt_dir, nii_files, 'no_debug')
         tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-        gen_tracks = gentck(pt_dir, 'no_debug')
-        registration(pt_dir, template_file)
+        gentck(pt_dir, 'no_debug')
+        registration(pt_dir, template_file, 'no_debug')
         
     else:
     
@@ -446,8 +444,6 @@ def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
                     for j in files:
                         if '.dcm' in j:
                             template_file.append(f"{i}{j}")
-                        
-        print(template_file)
     
         if len(nii_files) == 0:
             nii_dir = f"{pt_dir}Processed/11_nifti/"
@@ -457,14 +453,16 @@ def no_debug(mask_skip, gentrck_skip, bvalue_folders, pt_dir, pt_id, DWI_shell):
                     nii_files.append(f"{nii_dir}{j}")
 
             
-        if gentrck_skip == 'no':
+        if method == 1:
             create_mask(pt_id, pt_dir, nii_files, 'no_debug')
             tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-            gen_tracks = gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file)
+            gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file, 'no_debug')
             
-        else:
-            tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-            gen_tracks = gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file)
+        elif method == 2:
+            gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file, 'no_debug')
+
+        elif method == 3:
+            registration(pt_dir, template_file, 'no_debug')
 

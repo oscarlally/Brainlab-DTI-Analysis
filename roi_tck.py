@@ -23,7 +23,7 @@ roi_list = ['AF_L.mif',
             'R_latCalc.mif',
             'L_latVentr',
             'R_latVentr',
-            'OR_exclude.mif'
+            'OR_exclude.mif',
             'other.mif']
 
 tck_list = ['AF.tck',
@@ -38,4 +38,5 @@ tck_list = ['AF.tck',
             'R-LGN_EX_UNI.tck',
             'LFaceM1.tck',
             'RFaceM1.tck',
+            'OR_exclude.tck',
             'other.tck']

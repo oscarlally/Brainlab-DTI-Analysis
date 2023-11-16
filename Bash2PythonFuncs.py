@@ -5,7 +5,8 @@ Created on 15/02/2023
 @author: oscarlally
 """
 
-
+from tkinter import filedialog
+import nibabel as nib
 import os
 import subprocess
 import signal
@@ -47,19 +48,23 @@ class TimeoutException(Exception):
     pass
     
     
-def rem_dir(pt_dir):
-    isExist = os.path.exists(f"{pt_dir}Processed/1_convert/")
+def rem_dir(processed_dir):
+    isExist = os.path.exists(f"{processed_dir}1_convert/")
     if isExist == True:
         remove = input('There is already data here.  Would you like to remove it? (y/n): ')
         if remove.lower() == 'y':
-            rmtree(f"{pt_dir}Processed/")
-            os.makedirs(f"{pt_dir}Processed/")
+            rmtree(processed_dir)
+            os.makedirs(processed_dir)
+            os.chdir(processed_dir)
+            return 0
         else:
-            pass
+            os.chdir(processed_dir)
+            return 0
     else:
-        os.makedirs(f"{pt_dir}Processed/", exist_ok=True)
+        os.makedirs(processed_dir, exist_ok=True)
+        os.chdir(processed_dir)
         return 1
-    os.chdir(f"{pt_dir}Processed/")
+
     
     
 
@@ -109,7 +114,8 @@ def fsl_path_finder(dir_1, dir_2):
     
     
 
-def get_bvalue_folders():
+def get_bvalue_folders(pt_dir):
+    os.chdir(pt_dir)
     bvalue_folders = [f.path for f in os.scandir(os.getcwd()) if f.is_dir()]
     for idx, i in enumerate(bvalue_folders):
         bvalue_folders[idx] = f"{i}/"
@@ -262,12 +268,12 @@ def zero_test(file_1, file_2):
     result = [line for line in lines1 if line not in lines2]
     if len(result) > 4:
         print()
-        print('The headers are not the same')
+        print('The headers are not the same; the nii conversion has been unsuccessful.  Please re-run.')
         print()
         return 0
     else:
         print()
-        print('The headers are identical')
+        print('The headers are identical, the nii conversion has been successful.')
         print()
         return 1
         
@@ -369,43 +375,36 @@ def get_transform_matrix(nii_list):
     return transform, std_output
     
 
-def change_thresh(nii_dir, object_name, thresh):
+def change_thresh(nii_dir, object_name, thresh, debug):
 
     thresholded_obj = f"{nii_dir}{object_name}_registered_threshold.nii.gz"
-    chtrsh_cmd = f"fslmaths {nii_dir}{object_name}_registered.nii.gz \
-                  -thr {thresh} {thresholded_obj}"
+    chtrsh_cmd = f"fslmaths {nii_dir}{object_name}_registered.nii.gz -thr {thresh} {thresholded_obj}"
     view_cmd = f"fsleyes {thresholded_obj}"
-    run(thresholded_obj)
-    run(view_cmd)
+    run(chtrsh_cmd)
+    if debug == 'debug':
+        run(view_cmd)
     return thresholded_obj
 
 
-def register(pt_dir, object):
+def register(pt_dir, debug):
 
     nii_dir = f"{pt_dir}Processed/11_nifti/"
     misc_dir = f"{pt_dir}Processed/13_misc/"
     b0_extract_nii = f"{nii_dir}extracted_b0.nii"
     t1_bet_nii = f"{nii_dir}t1_bet_mask.nii.gz"
-    
 
-    objects = []
-    names = []
-    for i in os.listdir(nii_dir):
-        if 'NORM' in i:
-            objects.append(f"{nii_dir}{i}")
-            names.append(i)
-    
-    if len(objects) > 1:
-        for idx, i in enumerate(objects):
-            if object.lower() in i.lower():
-                object_nii = i
-                object_name = names[idx]
-    else:
-        object_nii = objects[0]
-        object_name = names[0].split('.')[0]
+    print()
+    print('Please choose the tract that you would like to register')
+
+    file_paths = filedialog.askopenfilenames(title='Select tract to register',
+                                             filetypes=[('Nii Files', '*.nii'), ('All files', '*.*')],
+                                             initialdir=nii_dir)
+    object_nii = list(file_paths)[0]
+    object_name_pre = object_nii.rsplit('/', 1)[1]
+    object_name = object_name_pre.split('.')[0]
 
     registered_object = f"{nii_dir}{object_name}_registered.nii.gz"
-    
+
     fslhd_cmd_1 = f"fslhd {b0_extract_nii}"
     fslhd_cmd_2 = f"fslhd {object_nii}"
 
@@ -413,37 +412,104 @@ def register(pt_dir, object):
     run_fsl(fslhd_cmd_2, pt_dir)
 
     identical = zero_test(f"{misc_dir}extracted_b0.txt", f"{misc_dir}object.txt")
-        
-    #1. register the dwi to T1 and get transform
+
+    # 1. register the dwi to T1 and get transform
     trans_cmd_1 = f"flirt -in {b0_extract_nii} -ref {t1_bet_nii} -out {nii_dir}outvol.nii -omat {misc_dir}transform.mat -dof 6"
     run(trans_cmd_1)
-    #2. apply transform to object
+
+    # 2. apply transform to object
     trans_cmd_2 = f"flirt -in {object_nii} -ref {t1_bet_nii} -out {registered_object} -init {misc_dir}transform.mat -applyxfm"
     run(trans_cmd_2)
 
-    while True:
-        print()
-        thresh = input('Please type in the threshold that you want to try: ')
+    print()
 
-        thresholded = change_thresh(nii_dir, object_name, thresh)
+    check = input('Do you want to threshold the registered tract? (y/n): ')
 
-        happy = input('Do you want to re-threshold? (Type "y" for yes, "n" for no): ')
+    if check.lower() == 'y':
 
-        if happy == 'n':
-            break
+        while True:
+            print()
+
+            thresh = input('Please type in the threshold value that you want to try: ')
+
+            thresholded = change_thresh(nii_dir, object_name, thresh, debug)
+
+            print()
+
+            happy = input('Do you want to re-threshold? (y/n): ')
+
+            if happy == 'n':
+
+                break
+
+    else:
+
+        thresholded = f"{registered_object}"
 
     """Potential for problems here given that the thresholded object is not being subtracted"""
 
     if identical == 0:
+
         return 0, thresholded
+
     else:
+
         return 1, thresholded
-        
-        
-        
-def skew(array, skew_factor):
+
+
+def norm_nii(input_file, output_file, min_value, max_value):
+    # Load the NIfTI image
+    img = nib.load(input_file)
+    data = img.get_fdata()
+
+    # Normalize the voxel values to the specified range
+    normalized_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * (max_value - min_value) + min_value
+
+    # Save the normalized data to a new NIfTI file
+    normalized_img = nib.Nifti1Image(normalized_data, img.affine)
+    nib.save(normalized_img, output_file)
+
+
+def nii_operations(input_file_1, input_file_2, output_file, operator):
+    # Load the NIfTI image
+    img_1 = nib.load(input_file_1)
+    data_1 = img_1.get_fdata()
+    img_2 = nib.load(input_file_2)
+    data_2 = img_2.get_fdata()
+
+    if operator == 'mult':
+        new_data = data_1*data_2
+    if operator == 'sub':
+        new_data = data_2 - data_1
+
+    # Save the normalized data to a new NIfTI file
+    normalized_img = nib.Nifti1Image(new_data, img_1.affine)
+    nib.save(normalized_img, output_file)
+
+
+def get_pixel_range(nifti_file_path):
+    try:
+        img = nib.load(nifti_file_path)
+        data = img.get_fdata()
+
+        # Assuming it's a 3D image, you might want to consider other dimensions if needed
+        max_value = data.max()
+        min_value = data.min()
+
+        return min_value, max_value
+
+    except Exception as e:
+        print(f"Error reading the NIfTI file: {e}")
+        return None, None
+
+
+
+def skew(binarised_object, skew_factor):
+    nifti_file = nib.load(binarised_object)
+    array = nifti_file.get_fdata()
     skewed_array = np.where(array <= 0, 0, np.where(array >= 1, 1, 1 - (1 - array) ** skew_factor))
-    return skewed_array
+    modified_file = nib.Nifti1Image(skewed_array, nifti_file.affine)
+    return modified_file
 
 
 
@@ -466,3 +532,16 @@ def karawun_run(pt_dir, dicom_template, nifti_filename, dcm_dir, t1_nii):
     # label_cmd = f"importTractography --dicom-template {dicom_template} --nifti {t1_nii} {fa_tensor} {tract_files}  {label_files}   --output-dir {dcm_dir}"
     
     os.chdir(current_dir)
+
+
+def find_balance_point(lst):
+    total_sum = sum(lst)
+    current_sum = 0
+
+    for i, value in enumerate(lst):
+        current_sum += value
+        if current_sum > total_sum - current_sum:
+            return i
+
+    # Return -1 if no balance point is found
+    return -1

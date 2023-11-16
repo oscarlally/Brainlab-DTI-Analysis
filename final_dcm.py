@@ -1,139 +1,65 @@
+import nibabel as nib
 import numpy as np
 import pydicom
-import os
+
+nii_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/12_overlays/t1_burned.nii.gz'
+ref_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/T1/SCARD_Philip_He.MR.fMRI_Motor.5.1.2023.10.18.12.29.30.477.17582223.dcm'
+output_path = '/Users/oscarlally/Desktop/tests/new_dicom_file.dcm'
+
+def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
+
+    # Load NIfTI file for pixel array
+    nifti_data = nib.load(nifti_file_path)
+    nifti_pixel_array = nifti_data.get_fdata()
+
+    # Update pixel data with rescaled NIfTI pixel array
+    dicom_file = pydicom.dcmread(reference_dicom_path, force=True)
+    max_value = int(np.max(dicom_file.pixel_array)*max_factor)
+
+    # Flatten the NIfTI pixel array
+    nifti_pixel_array_flat = nifti_pixel_array.flatten(order='K')
+    max_value = np.max(nifti_pixel_array_flat)
+    arr_max_doubled = nifti_pixel_array_flat.copy()
+    nifti_pixel_array_flat[nifti_pixel_array_flat == max_value] *= 2
+
+    nifti_pixel_array_rescaled = (
+        (nifti_pixel_array_flat - np.min(nifti_pixel_array_flat)) /
+        (np.max(nifti_pixel_array_flat) - np.min(nifti_pixel_array_flat)) * max_value
+    )
+
+    # bincount = list(np.bincount(nifti_pixel_array_rescaled.astype(np.int16)))
+    # middle = find_balance_point(bincount)
+
+    nifti_pixel_array_rescaled = nifti_pixel_array_rescaled.astype(np.uint16)
+
+    # Ensure correct byte order (little-endian)
+    nifti_pixel_array_rescaled = nifti_pixel_array_rescaled.byteswap()
+
+    # Convert to bytes with 'C' order
+    nifti_pixel_data_bytes = nifti_pixel_array_rescaled.tobytes(order='C')
+
+    # Set the correct data type
+    dicom_file.BitsStored = 16
+    dicom_file.BitsAllocated = 16
+    dicom_file.HighBit = 15
+
+    # Set the correct Transfer Syntax UID
+    trans_type = dicom_file.file_meta.TransferSyntaxUID
+    dicom_file.file_meta.TransferSyntaxUID = trans_type  # Explicit VR Little Endian
+
+    # Update the PixelData attribute
+    dicom_file.PixelData = nifti_pixel_data_bytes
+
+    dicom_file.PatientName = 'Anon'
+
+    # Set WindowCenter and WindowWidth based on the peak value
+    dicom_file.WindowCenter = int(max_value*wind_factor)
+
+    # Save as a new DICOM file
+    dicom_file.save_as(output_dicom_path)
 
 
-def final_dicom_conversion(dcm_directory, t1_dicom, output_file, max_value):
-
-    def separate_images(pixel_data, rows, columns, bits_allocated, samples_per_pixel):
-        image_size = rows * columns * bits_allocated // 8
-        total_images = len(pixel_data) // image_size
-
-        images = []
-        for i in range(1):
-            start_idx = i * image_size
-            end_idx = start_idx + image_size
-            image_bytes = pixel_data[start_idx:end_idx]
-
-            if bits_allocated == 8:
-                # For 8-bit data, use numpy to reshape the byte string into a 2D image array
-                image_array = np.frombuffer(image_bytes, dtype=np.uint8).reshape((rows, columns))
-            elif bits_allocated == 16:
-                # For 16-bit data, use numpy to reshape the byte string into a 2D image array
-                image_array = np.frombuffer(image_bytes, dtype=np.uint16).reshape((rows, columns))
-            else:
-                # Handle other bits_allocated values if necessary
-                raise ValueError(f"Unsupported bits_allocated: {bits_allocated}")
-            flipped_array = np.flipud(image_array)
-            images.append(flipped_array.tobytes())
-
-        return images
-
-    filelist = []
-    for i in os.listdir(dcm_directory):
-        filelist.append(f"{os.path.split(dcm_directory)[0]}/{i}")
-
-    filelist.sort()
-
-
-    a = []
-
-    for idx, i in enumerate(filelist):
-
-        # Load DICOM file
-        dicom_file = pydicom.dcmread(i)
-
-        # Extract relevant DICOM header information
-        rows = dicom_file.Rows
-        columns = dicom_file.Columns
-        bits_allocated = dicom_file.BitsAllocated
-        samples_per_pixel = dicom_file.SamplesPerPixel
-
-        # Separate images from pixel data
-        pixel_data = dicom_file.PixelData
-        images = separate_images(pixel_data, rows, columns, bits_allocated, samples_per_pixel)
-
-        if idx == 0:
-
-            a.append(images[0])
-
-        else:
-
-            a[0] = a[0] + images[0]
-            
-
-    dicom_file = pydicom.dcmread(t1_dicom, force=True)
-    
-    dicom_file.PixelData = a[0]
-
-    dicom_file.save_as(output_file)
-    
-
-    def contrast_stretching(pixel_array):
-        min_value = pixel_array.min()
-        max_value = pixel_array.max()
-
-        # Calculate the contrast stretching mapping
-        pixel_values = (pixel_array - min_value) * (max_value - 1) / (max_value - min_value)
-        pixel_values = np.clip(pixel_values, 0, max_value - 1)
-        pixel_values = pixel_values.astype(np.uint16)
-
-        return pixel_values
-
-    def histogram_equalization(pixel_array):
-        # Calculate the cumulative distribution function
-        hist, bin_edges = np.histogram(pixel_array.flatten(), bins=range(0, 4096))
-        cdf = hist.cumsum()
-
-        # Normalize the cdf
-        cdf_normalized = (cdf - cdf.min()) * float(max_value - 1) / (cdf.max() - cdf.min())
-
-        # Use linear interpolation to map the pixel values
-        pixel_values = np.interp(pixel_array.flatten(), bin_edges[:-1], cdf_normalized)
-        pixel_values = np.clip(pixel_values, 0, max_value - 1)
-        pixel_values = pixel_values.astype(np.uint16)
-
-        return pixel_values.reshape(pixel_array.shape)
-
-    def rescale_dicom_image(dicom_file_path):
-        # Read the DICOM image
-        dicom_dataset = pydicom.dcmread(dicom_file_path)
-
-        # Get the pixel data as a NumPy array
-        pixel_array = dicom_dataset.pixel_array.astype(float)
-
-        # Check if the maximum pixel value is greater than the desired maximum
-        if pixel_array.max() > max_value:
-            # Apply contrast stretching to rescale the pixel values
-            stretched_pixel_array = contrast_stretching(pixel_array)
-
-            # Apply histogram equalization to the stretched pixel values
-            scaled_pixel_array = histogram_equalization(stretched_pixel_array)
-
-            # Update the pixel data in the DICOM dataset
-            dicom_dataset.PixelData = scaled_pixel_array.tobytes()
-
-            # Update the window width and window center
-            dicom_dataset.WindowWidth = max_value
-            dicom_dataset.WindowCenter = max_value / 2
-
-            # Save the modified DICOM dataset back to a new file
-            new_dicom_file_path = output_file
-            dicom_dataset.save_as(new_dicom_file_path)
-            print()
-            print("Analysis completed")
-
-        else:
-            print()
-            print("No rescaling needed. Maximum pixel value is not greater than the desired maximum.")
-            print("Analysis completed")
-
-    rescale_dicom_image(output_file)
-
-
-
-
-
+create_brainlab_object(nii_path, ref_path, output_path, 0.5, 0.66)
 
 
 

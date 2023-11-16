@@ -26,20 +26,19 @@ def run_function(debug_binary):
     DWI_multishell = input('Is the data multi-shelled? (y/n): ')
     pt_dir = find_dir(pt_id, home_dir)
     pt_dir = f"{pt_dir}/raw/"
-    masking_list = []
-    gentrck_list = []
+    processed_path = f"{pt_dir}Processed/"
+    skip_list = []
 
 
     # INITIALISATION
     if os.path.isdir(pt_dir):
         print("Directory for patient ID exists.")
-        os.chdir(pt_dir)
-        bvalue_folders = get_bvalue_folders()
+        bvalue_folders = get_bvalue_folders(pt_dir)
         
         # Check if data is already there and give the option to delete it
-        remove = rem_dir(pt_dir)
+        remove = rem_dir(processed_path)
 
-        isExist = os.path.exists(f"{pt_dir}Processed/1_convert/")
+        isExist = os.path.exists(f"{processed_path}/1_convert/")
         if isExist == False:
             os.makedirs("1_convert/")
             os.makedirs("2_denoise/")
@@ -54,67 +53,53 @@ def run_function(debug_binary):
             os.makedirs("11_nifti/")
             os.makedirs("12_overlays")
             os.makedirs("13_misc")
-            os.makedirs("14_dicom/")
-            os.makedirs("15_volume/")
+            os.makedirs("14_volume/")
     else:
         print("Error: Folder for the entered patient ID cannot be found.")
         exit(1)
         
 
-    while True:
-        masking = input("Skip to brain masking? (y/n): ")
+    masking = input("Skip to brain masking? (y/n): ")
 
-        if masking.lower() == 'y':
-            print("Skipping all processing steps, going straight to mask creation")
-            mask_skip = 'yes'
-            gentrck_skip = 'no'
-            masking_list.append(mask_skip)
-            gentrck_list.append(gentrck_skip)
-            break
+    if masking.lower() == 'y':
+        print("Skipping processing steps, going straight to mask creation")
+        skip_list.append(1)
+        skip_list.append(0)
+        skip_list.append(0)
 
-        elif masking.lower() == 'n':
+    elif masking.lower() == 'n':
 
-            gentrck = input("Skip to tract generation? (y/n): ")
+        gentrck = input("Skip to tract generation? (y/n): ")
 
-            if gentrck.lower() == 'y':
-                print("Skipping all processing steps, going straight to tract generation")
-                mask_skip = 'yes'
-                gentrck_skip = 'yes'
-                masking_list.append(mask_skip)
-                gentrck_list.append(gentrck_skip)
-                break
+        if gentrck.lower() == 'y':
+            print("Skipping processing steps, going straight to tract generation")
+            skip_list.append(0)
+            skip_list.append(1)
+            skip_list.append(0)
 
-            elif masking.lower() == 'n' and remove != 1:
-                print("Running all processing steps")
-                mask_skip = 'no'
-                gentrck_skip = 'no'
-                masking_list.append(mask_skip)
-                gentrck_list.append(gentrck_skip)
-                break
+        elif gentrck.lower() == 'n':
+
+            reg = input("Skip to registration? (y/n): ")
+
+            if reg.lower() == 'y':
+                skip_list.append(0)
+                skip_list.append(0)
+                skip_list.append(1)
+
             else:
-                print("Invalid response.  Please re-run the code with a correct response.")
-                exit(1)
+                print('Processing all steps')
+                skip_list.append(0)
+                skip_list.append(0)
+                skip_list.append(0)
 
-        else:
-            print("Invalid response.  Please re-run the code with a correct response.")
-            exit(1)
-            
-        
-            
-    while True:
+    if debug_binary.lower() == 'y':
+        print("Running in debug mode")
+        debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_multishell)
 
-        if debug_binary.lower() == 'y':
-            print("Running in debug mode")
-            debug(masking_list[0], gentrck_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
-            break
-        elif debug_binary.lower() == 'n':
-            print("Running without debug steps")
-            no_debug(masking_list[0], gentrck_list[0], bvalue_folders, pt_dir, pt_id, DWI_multishell)
-            break
-        else:
-            exit(1)
-        
-        
+    elif debug_binary.lower() == 'n':
+        print("Running without debug steps")
+        no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_multishell)
+
 
 def cmd_line():
     # Define the description string
@@ -136,6 +121,7 @@ def cmd_line():
         run_function(args.debug)
     else:
         print("Invalid input for --debug. Use 'y' or 'n'.")
+
 
 if __name__ == "__main__":
     cmd_line()
