@@ -4,7 +4,7 @@ import pydicom
 
 nii_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/12_overlays/t1_burned.nii.gz'
 ref_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/T1/SCARD_Philip_He.MR.fMRI_Motor.5.1.2023.10.18.12.29.30.477.17582223.dcm'
-output_path = '/Users/oscarlally/Desktop/tests/new_dicom_file.dcm'
+output_path = '/Users/oscarlally/Desktop/tests/brainlab_object.dcm'
 
 def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
 
@@ -50,7 +50,8 @@ def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_p
     # Update the PixelData attribute
     dicom_file.PixelData = nifti_pixel_data_bytes
 
-    dicom_file.PatientName = 'Anon'
+    # Anonymise if needs be
+    # dicom_file.PatientName = 'Anon'
 
     # Set WindowCenter and WindowWidth based on the peak value
     dicom_file.WindowCenter = int(max_value*wind_factor)
@@ -59,7 +60,7 @@ def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_p
     dicom_file.save_as(output_dicom_path)
 
 
-create_brainlab_object(nii_path, ref_path, output_path, 0.5, 0.66)
+create_brainlab_object(nii_path, ref_path, output_path, 1, 0.2)
 
 
 

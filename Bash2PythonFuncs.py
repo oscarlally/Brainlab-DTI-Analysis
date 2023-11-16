@@ -377,7 +377,7 @@ def get_transform_matrix(nii_list):
 
 def change_thresh(nii_dir, object_name, thresh, debug):
 
-    thresholded_obj = f"{nii_dir}{object_name}_registered_threshold.nii.gz"
+    thresholded_obj = f"{nii_dir}{object_name}_registered_threshold_{thresh}.nii.gz"
     chtrsh_cmd = f"fslmaths {nii_dir}{object_name}_registered.nii.gz -thr {thresh} {thresholded_obj}"
     view_cmd = f"fsleyes {thresholded_obj}"
     run(chtrsh_cmd)
