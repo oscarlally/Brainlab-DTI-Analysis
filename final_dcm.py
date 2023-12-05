@@ -2,9 +2,6 @@ import nibabel as nib
 import numpy as np
 import pydicom
 
-nii_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/12_overlays/t1_burned.nii.gz'
-ref_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/T1/SCARD_Philip_He.MR.fMRI_Motor.5.1.2023.10.18.12.29.30.477.17582223.dcm'
-output_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/14_volume/brainlab_object.dcm'
 
 def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
 
@@ -59,8 +56,6 @@ def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_p
     # Save as a new DICOM file
     dicom_file.save_as(output_dicom_path)
 
-
-create_brainlab_object(nii_path, ref_path, output_path, 1, 0.2)
 
 
 
