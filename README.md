@@ -1,9 +1,12 @@
 # Brainlab-DTI-Analysis
 
-A code base to analyise DTI raw files and create DTI objects for fusion in Brainlab.
+This is a code base to analyise DTI raw files and create DTI objects for fusion in Brainlab.
 
+![](readme-resources/tractography.gif)
  
- This script can either be run locally or in a venv.  There are no requirements for this script in terms of python packages.
+ This script can either be run locally or in a venv.  Please ensure that once you have created the local environment, you run the following command:
+
+ pip3 install -r requirements.txt
  
  However, FSL, MRtrix3 and Karawun need to be installed on your local computer.  The github repos for these two pieces of software are:
 
