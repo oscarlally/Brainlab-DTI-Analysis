@@ -4,7 +4,7 @@ import pydicom
 
 nii_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/12_overlays/t1_burned.nii.gz'
 ref_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/T1/SCARD_Philip_He.MR.fMRI_Motor.5.1.2023.10.18.12.29.30.477.17582223.dcm'
-output_path = '/Users/oscarlally/Desktop/tests/brainlab_object.dcm'
+output_path = '/Users/oscarlally/Desktop/CCL/twelth/raw/Processed/14_volume/brainlab_object.dcm'
 
 def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
 
@@ -18,9 +18,9 @@ def create_brainlab_object(nifti_file_path, reference_dicom_path, output_dicom_p
 
     # Flatten the NIfTI pixel array
     nifti_pixel_array_flat = nifti_pixel_array.flatten(order='K')
-    max_value = np.max(nifti_pixel_array_flat)
+    max_flat = np.max(nifti_pixel_array_flat)
     arr_max_doubled = nifti_pixel_array_flat.copy()
-    nifti_pixel_array_flat[nifti_pixel_array_flat == max_value] *= 2
+    nifti_pixel_array_flat[nifti_pixel_array_flat == max_flat] *= 2
 
     nifti_pixel_array_rescaled = (
         (nifti_pixel_array_flat - np.min(nifti_pixel_array_flat)) /
