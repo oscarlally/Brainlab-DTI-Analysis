@@ -2,7 +2,7 @@
 
 This is a code base to analyise DTI raw files and create DTI objects for fusion in Brainlab.
 
-![](readme-resources/tractography.gif)
+![](readme-resources/tractography.png)
  
  This script can either be run locally or in a venv.  Please ensure that once you have created the local environment, you run the following command:
 
