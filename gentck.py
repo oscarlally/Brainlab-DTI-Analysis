@@ -70,6 +70,7 @@ def gentck(pt_dir, debug):
     exclude_cmd = None
     stream_cmd = None
     view_cmd = None
+    tract_select = None
 
     def run_command():
         nonlocal cmd_1
@@ -84,11 +85,13 @@ def gentck(pt_dir, debug):
         nonlocal exclude_cmd
         nonlocal stream_cmd
         nonlocal view_cmd
+        nonlocal tract_select
 
         roi_path = f"{processed_path}/9_ROI/"
         fa = f"{processed_path}/7_tensor/fa.mif"
         ev = f"{processed_path}/7_tensor/ev.mif"
         tract = f"{processed_path}/10_tract/{tract_combo.get()}"
+        tract_select = tract_combo.get()
         seed_image = f"{roi_path}{seed_image_combo.get()}"
         include_1 = include_1_combo.get()
         include_2 = include_2_combo.get()
@@ -261,5 +264,7 @@ def gentck(pt_dir, debug):
         run(view_cmd)
 
     convert_tracts(pt_dir, debug)
+
+    return tract_select
 
 

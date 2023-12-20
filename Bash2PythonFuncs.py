@@ -6,6 +6,7 @@ Created on 15/02/2023
 """
 
 from tkinter import filedialog
+import pydicom
 import nibabel as nib
 import os
 import subprocess
@@ -14,7 +15,9 @@ import numpy as np
 import itertools
 import shutil
 from shutil import rmtree
+import random
 import re
+import string
 
 
 
@@ -470,6 +473,7 @@ def norm_nii(input_file, output_file, min_value, max_value):
     nib.save(normalized_img, output_file)
 
 
+
 def nii_operations(input_file_1, input_file_2, output_file, operator):
     # Load the NIfTI image
     img_1 = nib.load(input_file_1)
@@ -545,3 +549,120 @@ def find_balance_point(lst):
 
     # Return -1 if no balance point is found
     return -1
+
+
+def flip(dicom_file_path):
+
+    dicom_file = pydicom.dcmread(dicom_file_path)
+
+    for i in range(208):
+        orientation_list = dicom_file.PerFrameFunctionalGroupsSequence[i].PlaneOrientationSequence[
+            0].ImageOrientationPatient
+        # orientation_list = orientation_list[::-1]
+        orientation_list = [-1, 0, 0, 0, 1, 0]
+        dicom_file.PerFrameFunctionalGroupsSequence[i].PlaneOrientationSequence[
+            0].ImageOrientationPatient = orientation_list
+    dicom_file.StudyInstanceUID = ''.join(random.choices(string.digits, k=8))
+    dicom_file.SeriesInstanceUID = ''.join(random.choices(string.digits, k=8))
+    dicom_file.StudyID = ''.join(random.choices(string.digits, k=8))
+
+    nifti_pixel_data_bytes = dicom_file.PixelData
+    nifti_pixel_data_bytes = nifti_pixel_data_bytes[::-1]
+    dicom_file.PixelData = nifti_pixel_data_bytes
+
+    # Save the flipped DICOM multiframe image to a new file
+    output_dicom_file_path = "/Users/oscarlally/Desktop/flipped_lh.dcm"
+    dicom_file.save_as(output_dicom_file_path)
+
+
+def nii_flip(input_nii, output_nii):
+
+    nifti_data = nib.load(input_nii)
+
+    # Get the affine transformation matrix
+    affine_matrix = nifti_data.affine
+
+    # Define the flipping matrix along the x-axis (left-right flip)
+    flip_matrix = np.diag([-1, 1, 1, 1])
+
+    # Apply the flipping matrix to the original affine matrix
+    new_affine_matrix = np.dot(affine_matrix, flip_matrix)
+
+    # Flip the NIfTI data
+    flipped_nifti_data = nib.Nifti1Image(np.flipud(nifti_data.get_fdata()), new_affine_matrix)
+
+    # Save the flipped NIfTI file
+    nib.save(flipped_nifti_data, output_nii)
+
+
+def reverse_and_concat(input_str, n):
+    # Split the input string into a list of substrings of length n
+    substrings = [input_str[i:i + n] for i in range(0, len(input_str), n)]
+
+    # Reverse each substring
+    reversed_substrings = [s[::-1] for s in substrings]
+
+    # Concatenate the reversed substrings into the final result
+    result = b''.join(reversed_substrings)
+
+    return result
+
+
+def flip_affine(nii_file, output):
+    nifti_image = nib.load(nii_file)
+
+    nifti_pixel_array = nifti_image.get_fdata()
+
+    print(nifti_pixel_array.shape)
+
+    # Extract the affine matrix
+    affine_matrix = nifti_image.affine.copy()
+
+    # Mirror the affine matrix to achieve a horizontal flip
+    affine_matrix[0, 0] *= -1  # Flip X axis
+    affine_matrix[0, 3] = nifti_pixel_array.shape[0] - affine_matrix[0, 3]
+
+
+    # Apply the mirrored affine matrix to the NIfTI image
+    mirrored_nifti_image = nib.Nifti1Image(nifti_image.get_fdata(), affine_matrix)
+
+    print(mirrored_nifti_image.get_fdata().shape)
+
+    # Save the mirrored NIfTI file
+    nib.save(mirrored_nifti_image, output)
+
+
+def flip_dicom_x(dicom_file, output_file):
+    # Load the DICOM file
+    dicom_data = pydicom.dcmread(dicom_file)
+
+    # Get the pixel data as a NumPy array
+    dicom_pixel_array = dicom_data.pixel_array
+
+    # Flip the pixel data along the x-axis
+    flipped_pixel_array = np.flip(dicom_pixel_array, axis=1)
+
+    # Update DICOM metadata if needed
+
+    # Save the flipped DICOM file
+    dicom_data.PixelData = flipped_pixel_array.tobytes()
+    dicom_data.save_as(output_file)
+
+
+def mirror_nifti(input_nifti_path, output_nifti_path):
+    # Load NIfTI file
+    nifti_data = nib.load(input_nifti_path)
+    nifti_data = nib.as_closest_canonical(nifti_data)
+
+    # Get voxel data
+    voxel_data = nifti_data.get_fdata()
+
+    # Mirror along the X-axis
+    mirrored_data = np.flip(voxel_data, axis=1)
+
+    # Create a new NIfTI object with mirrored data
+    mirrored_nifti = nib.Nifti1Image(mirrored_data, nifti_data.affine, nifti_data.header)
+
+    # Save the mirrored NIfTI file
+    nib.save(mirrored_nifti, output_nifti_path)
+

@@ -227,8 +227,8 @@ def debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
         
         create_mask(pt_id, pt_dir, nii_files, 'debug')
         tensor_estimation(pt_dir, DWI_shell, 'debug')
-        gentck(pt_dir, 'debug')
-        registration(pt_dir, template_file, 'debug')
+        tract_name = gentck(pt_dir, 'debug')
+        registration(pt_dir, template_file, tract_name, 'debug')
         
     else:
 
@@ -250,12 +250,12 @@ def debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
         if method == 1:
             create_mask(pt_id, pt_dir, nii_files, 'debug')
             tensor_estimation(pt_dir, DWI_shell, 'debug')
-            gentck(pt_dir, 'debug')
-            registration(pt_dir, template_file, 'debug')
+            tract_name = gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file, tract_name, 'debug')
             
         elif method == 2:
-            gentck(pt_dir, 'debug')
-            registration(pt_dir, template_file, 'debug')
+            tract_name = gentck(pt_dir, 'debug')
+            registration(pt_dir, template_file, tract_name, 'debug')
 
         elif method == 3:
             registration(pt_dir, template_file, 'debug')
@@ -432,8 +432,8 @@ def no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
         
         create_mask(pt_id, pt_dir, nii_files, 'no_debug')
         tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-        gentck(pt_dir, 'no_debug')
-        registration(pt_dir, template_file, 'no_debug')
+        tract_name = gentck(pt_dir, 'no_debug')
+        registration(pt_dir, template_file, tract_name, 'no_debug')
         
     else:
     
@@ -456,12 +456,12 @@ def no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
         if method == 1:
             create_mask(pt_id, pt_dir, nii_files, 'no_debug')
             tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-            gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file, 'no_debug')
+            tract_name = gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file, tract_name, 'no_debug')
             
         elif method == 2:
-            gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file, 'no_debug')
+            tract_name = gentck(pt_dir, 'no_debug')
+            registration(pt_dir, template_file, tract_name, 'no_debug')
 
         elif method == 3:
             registration(pt_dir, template_file, 'no_debug')
