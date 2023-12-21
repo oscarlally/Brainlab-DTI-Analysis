@@ -258,7 +258,8 @@ def debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
             registration(pt_dir, template_file, tract_name, 'debug')
 
         elif method == 3:
-            registration(pt_dir, template_file, 'debug')
+            tract_name = input('Please type in the tract name for labelling purposes:  ')
+            registration(pt_dir, template_file, tract_name, 'debug')
 
 
 
@@ -464,5 +465,6 @@ def no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
             registration(pt_dir, template_file, tract_name, 'no_debug')
 
         elif method == 3:
-            registration(pt_dir, template_file, 'no_debug')
+            tract_name = input('Please type in the tract name for labelling purposes:  ')
+            registration(pt_dir, template_file, tract_name, 'debug')
 

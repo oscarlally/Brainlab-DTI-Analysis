@@ -8,8 +8,11 @@ import os
 
 def create_brainlab_object(tract_name, nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
 
-    tract_part = os.path.basename(tract_name)
-    tract = tract_part.split('.')[0]
+    if '.' in tract_name:
+        tract_part = os.path.basename(tract_name)
+        tract = tract_part.split('.')[0]
+    else:
+        tract = tract_name
 
     # Load NIfTI file for pixel array
     nifti_data = nib.load(nifti_file_path)
