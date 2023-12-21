@@ -9,11 +9,11 @@ This is a code base to analyise DTI raw files and create DTI objects for fusion 
 
  pip3 install -r requirements.txt
  
- However, FSL, and MRTrix3 need to be installed on your local computer.  The github repos for these two pieces of software are:
+ However, FSL, and MRTrix3 need to be installed on your local computer.  The instructions to download these two pieces of software can be found here:
 
-https://github.com/MRtrix3/mrtrix3
+[https://github.com/MRtrix3/mrtrix3](https://www.mrtrix.org/download/)
 &
-https://github.com/fithisux/FSL
+[https://github.com/fithisux/FSL](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation)
 
 To run this script, navigate to the directory that you have saved this code in, and run the following command:
 
