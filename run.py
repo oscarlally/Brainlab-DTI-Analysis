@@ -24,16 +24,16 @@ def run_function(debug_binary):
 
     pt_id = input('Patient ID: ')
     DWI_multishell = input('Is the data multi-shelled? (y/n): ')
-    pt_dir = find_dir(pt_id, home_dir)
-    pt_dir = f"{pt_dir}/raw/"
-    processed_path = f"{pt_dir}Processed/"
+    pt_dir = f"{find_dir(pt_id, home_dir)}/"
+    pt_raw_dir = f"{pt_dir}/raw/"
+    processed_path = f"{pt_dir}/Processed/"
     skip_list = []
 
 
     # INITIALISATION
     if os.path.isdir(pt_dir):
         print("Directory for patient ID exists.")
-        bvalue_folders = get_bvalue_folders(pt_dir)
+        bvalue_folders = get_bvalue_folders(pt_raw_dir)
         
         # Check if data is already there and give the option to delete it
         remove = rem_dir(processed_path)

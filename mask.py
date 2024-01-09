@@ -6,11 +6,9 @@ Created on 15/02/2023
 @author: oscarlally
 """
 
-import sys
 import os
-import subprocess
 from shutil import rmtree
-from Bash2PythonFuncs import find_dir, masking
+from Bash2PythonFuncs import masking
 
 
 

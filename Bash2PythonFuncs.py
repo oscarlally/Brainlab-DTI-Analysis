@@ -6,18 +6,15 @@ Created on 15/02/2023
 """
 
 from tkinter import filedialog
-import pydicom
-import nibabel as nib
-import os
-import subprocess
-import signal
-import numpy as np
-import itertools
-import shutil
 from shutil import rmtree
-import random
+import nibabel as nib
+import numpy as np
+import subprocess
+import itertools
+import signal
+import shutil
+import os
 import re
-import string
 
 
 
@@ -32,25 +29,12 @@ def find_dir(pid, base_dir):
         print('Please retype in patient ID')
         new_pid = input()
         find_dir(new_pid, base_dir)
-        
-        
-def find_karawun(pid, base_dir):
-    x = 0
-    for root, subdirs, files in os.walk(base_dir):
-        for d in subdirs:
-            if d == pid:
-                x += 1
-                return os.path.join(root, d)
-    if x == 0:
-        print('Please retype in package')
-        new_pid = input()
-        find_dir(new_pid, base_dir)
 
 
 class TimeoutException(Exception):
     pass
-    
-    
+
+
 def rem_dir(processed_dir):
     isExist = os.path.exists(f"{processed_dir}1_convert/")
     if isExist == True:
@@ -156,34 +140,6 @@ def run_fsl(cmd, pt_dir):
     with open(f"{output_dir}{output_file}", 'r') as f:
         output = f.read()
     
-
-def BC(*arg):
-    current_dir = os.getcwd()
-    home_dir = os.path.expanduser("~")
-    functions_path = find_app('mrtrix3', '/usr/local/', home_dir)
-    functions_path = f"{functions_path}/bin"
-    os.chdir(functions_path)
-    cmd = ''
-    for i in arg:
-        if type(i) == list:
-            for j in i:
-                cmd += f"{j} "
-        else:
-            cmd += f"{i} "
-    process = subprocess.Popen(cmd.split())
-    process.wait()
-    os.chdir(current_dir)
-
-
-def run_norm(cmd):
-    process = subprocess.run(cmd.split())
-    
-    
-
-def create_files(*arg):
-    for i in arg:
-        f = open(i, 'w')
-        
 
 
 def get_volumes(mif_image):
@@ -474,23 +430,6 @@ def norm_nii(input_file, output_file, min_value, max_value):
 
 
 
-def nii_operations(input_file_1, input_file_2, output_file, operator):
-    # Load the NIfTI image
-    img_1 = nib.load(input_file_1)
-    data_1 = img_1.get_fdata()
-    img_2 = nib.load(input_file_2)
-    data_2 = img_2.get_fdata()
-
-    if operator == 'mult':
-        new_data = data_1*data_2
-    if operator == 'sub':
-        new_data = data_2 - data_1
-
-    # Save the normalized data to a new NIfTI file
-    normalized_img = nib.Nifti1Image(new_data, img_1.affine)
-    nib.save(normalized_img, output_file)
-
-
 def get_pixel_range(nifti_file_path):
     try:
         img = nib.load(nifti_file_path)
@@ -516,137 +455,6 @@ def skew(binarised_object, skew_factor):
     return modified_file
 
 
-
-def karawun_run(pt_dir, dicom_template, nifti_filename, dcm_dir, t1_nii):
-    current_dir = os.getcwd()
-    fa_tensor = f"{pt_dir}Processed/7_tensor/fa.nii.gz"
-    
-    print("WARNING: This function assumes that you have python 3.8 and that it is saved in the standard location. If you do not, please download python3.8 from https://www.python.org/downloads/release/python-380/. You also need to have downloaded the python package karawun using python3.8.  If you have not done so, add python3.8 to your system path and run the command python3.8 -m pip install karawun.")
-    
-    base_dir_pre = find_karawun('3.8', '/Library/')
-    base_dir = find_karawun('site-packages', base_dir_pre)
-    karawun_dir = find_karawun('karawun', base_dir)
-    os.chdir(karawun_dir)
-
-    conversion_cmd = f"importTractography --dicom-template {dicom_template} --nifti {nifti_filename} {fa_tensor} --output-dir {dcm_dir}"
-    subprocess.run(conversion_cmd.split())
-
-    # tract_files = f"--tract-files left_cst.tck right_cst.tck"
-    # label_files = f"--label-files lesion.nii.gz white_matter.nii.gz"
-    # label_cmd = f"importTractography --dicom-template {dicom_template} --nifti {t1_nii} {fa_tensor} {tract_files}  {label_files}   --output-dir {dcm_dir}"
-    
-    os.chdir(current_dir)
-
-
-def find_balance_point(lst):
-    total_sum = sum(lst)
-    current_sum = 0
-
-    for i, value in enumerate(lst):
-        current_sum += value
-        if current_sum > total_sum - current_sum:
-            return i
-
-    # Return -1 if no balance point is found
-    return -1
-
-
-def flip(dicom_file_path):
-
-    dicom_file = pydicom.dcmread(dicom_file_path)
-
-    for i in range(208):
-        orientation_list = dicom_file.PerFrameFunctionalGroupsSequence[i].PlaneOrientationSequence[
-            0].ImageOrientationPatient
-        # orientation_list = orientation_list[::-1]
-        orientation_list = [-1, 0, 0, 0, 1, 0]
-        dicom_file.PerFrameFunctionalGroupsSequence[i].PlaneOrientationSequence[
-            0].ImageOrientationPatient = orientation_list
-    dicom_file.StudyInstanceUID = ''.join(random.choices(string.digits, k=8))
-    dicom_file.SeriesInstanceUID = ''.join(random.choices(string.digits, k=8))
-    dicom_file.StudyID = ''.join(random.choices(string.digits, k=8))
-
-    nifti_pixel_data_bytes = dicom_file.PixelData
-    nifti_pixel_data_bytes = nifti_pixel_data_bytes[::-1]
-    dicom_file.PixelData = nifti_pixel_data_bytes
-
-    # Save the flipped DICOM multiframe image to a new file
-    output_dicom_file_path = "/Users/oscarlally/Desktop/flipped_lh.dcm"
-    dicom_file.save_as(output_dicom_file_path)
-
-
-def nii_flip(input_nii, output_nii):
-
-    nifti_data = nib.load(input_nii)
-
-    # Get the affine transformation matrix
-    affine_matrix = nifti_data.affine
-
-    # Define the flipping matrix along the x-axis (left-right flip)
-    flip_matrix = np.diag([-1, 1, 1, 1])
-
-    # Apply the flipping matrix to the original affine matrix
-    new_affine_matrix = np.dot(affine_matrix, flip_matrix)
-
-    # Flip the NIfTI data
-    flipped_nifti_data = nib.Nifti1Image(np.flipud(nifti_data.get_fdata()), new_affine_matrix)
-
-    # Save the flipped NIfTI file
-    nib.save(flipped_nifti_data, output_nii)
-
-
-def reverse_and_concat(input_str, n):
-    # Split the input string into a list of substrings of length n
-    substrings = [input_str[i:i + n] for i in range(0, len(input_str), n)]
-
-    # Reverse each substring
-    reversed_substrings = [s[::-1] for s in substrings]
-
-    # Concatenate the reversed substrings into the final result
-    result = b''.join(reversed_substrings)
-
-    return result
-
-
-def flip_affine(nii_file, output):
-    nifti_image = nib.load(nii_file)
-
-    nifti_pixel_array = nifti_image.get_fdata()
-
-    print(nifti_pixel_array.shape)
-
-    # Extract the affine matrix
-    affine_matrix = nifti_image.affine.copy()
-
-    # Mirror the affine matrix to achieve a horizontal flip
-    affine_matrix[0, 0] *= -1  # Flip X axis
-    affine_matrix[0, 3] = nifti_pixel_array.shape[0] - affine_matrix[0, 3]
-
-
-    # Apply the mirrored affine matrix to the NIfTI image
-    mirrored_nifti_image = nib.Nifti1Image(nifti_image.get_fdata(), affine_matrix)
-
-    print(mirrored_nifti_image.get_fdata().shape)
-
-    # Save the mirrored NIfTI file
-    nib.save(mirrored_nifti_image, output)
-
-
-def flip_dicom_x(dicom_file, output_file):
-    # Load the DICOM file
-    dicom_data = pydicom.dcmread(dicom_file)
-
-    # Get the pixel data as a NumPy array
-    dicom_pixel_array = dicom_data.pixel_array
-
-    # Flip the pixel data along the x-axis
-    flipped_pixel_array = np.flip(dicom_pixel_array, axis=1)
-
-    # Update DICOM metadata if needed
-
-    # Save the flipped DICOM file
-    dicom_data.PixelData = flipped_pixel_array.tobytes()
-    dicom_data.save_as(output_file)
 
 
 def mirror_nifti(input_nifti_path, output_nifti_path):
