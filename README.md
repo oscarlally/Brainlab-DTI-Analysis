@@ -5,7 +5,11 @@ This is a code base to analyise DTI raw files and create DTI objects for fusion 
 ![](readme-resources/tractography.png)
 (credit Human Brain Project https://www.humanbrainproject.eu)
  
- This script can either be run locally or in a venv.  Please ensure that once you have created the local environment, you run the following command:
+Please ensure you have downloaded GitHub desktop on your computer. This script can either be run locally or in a venv.  For either method, navigate to the folder on your computer where you want to save the code.  Once you have done this, open a terminal in that location and run the following command:
+
+git clone https://github.com/oscarlally/Brainlab-DTI-Analysis.git
+
+Please ensure that once you have created the local environment, you run the following command:
 
  pip3 install -r requirements.txt
  
