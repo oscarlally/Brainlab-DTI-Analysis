@@ -8,7 +8,7 @@ Created on 15/02/2023
 
 import os
 
-from Bash2PythonFuncs import BC, test_image, run, get_volumes
+from Bash2PythonFuncs import test_image, run, get_volumes
 from mask import create_mask
 from tensor_estimation import tensor_estimation
 from gentck import gentck
