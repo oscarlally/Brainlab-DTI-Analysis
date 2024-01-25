@@ -212,16 +212,16 @@ def masking(pt_id, pt_dir, dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug):
     g = input("g-value vertical gradient in fractional intensity threshold (-1->1); default=0; positive values give larger brain outline at bottom, smaller at top: ")
     f = input("f-value fractional intensity threshold (0->1); default=0.5; smaller values give larger brain outline estimates: ")
     
-    bet_cmd = f"bet {b0_extract_nii} {b0_upsamp} -n -m -f {f} -g {g}"
+    fsleyes_path = os.environ.get('FSLDIR')
+    fsleyes_path = f"{fsleyes_path}/bin/"
+    bet_cmd = f"{fsleyes_path}bet {b0_extract_nii} {b0_upsamp} -n -m -f {f} -g {g}"
     run(bet_cmd)
     
     if debug == 'debug':
     
         print('Check if the mask has worked.  If it has not, re-run this script and skip to masking, or run the check_mask function in the mask.py file')
-        fsleyes_path = os.environ.get('FSLDIR')
-        fsleyes_path = f"{fsleyes_path}/bin/"
-        os.chdir(fsleyes_path)
-        fsl_cmd = f"fsleyes {b0_extract_nii} {b0_upsamp_mask}"
+        
+        fsl_cmd = f"{fsleyes_path}fsleyes {b0_extract_nii} {b0_upsamp_mask}"
         subprocess.run(fsl_cmd.split())
         os.chdir(current_dir)
 
