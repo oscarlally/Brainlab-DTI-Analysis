@@ -19,6 +19,7 @@ pip3 install -r requirements.txt
 
 If you want to do this via a virtual environment, navigate to the project directory and run the commands:
 
+```python
 python3 -m venv venv
 
 .\venv\Scripts\activate
@@ -26,6 +27,8 @@ python3 -m venv venv
 source venv/bin/activate
 
 pip3 install -r requirements.txt
+
+```
 
 To install the dependencies and run this code in a virtual environment.
 
