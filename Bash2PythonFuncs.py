@@ -97,7 +97,22 @@ def fsl_path_finder(dir_1, dir_2):
     b = f"{a}/lib"
     c = find_dir('site_packages', b)
     return f"{c}/fsl"
-    
+
+
+def BC(*arg):
+    current_dir = os.getcwd()
+    functions_path = '/usr/local/mrtrix3/bin/'
+    os.chdir(functions_path)
+    cmd = ''
+    for i in arg:
+        if type(i) == list:
+            for j in i:
+                cmd += f"{j} "
+        else:
+            cmd += f"{i} "
+    process = subprocess.Popen(cmd.split())
+    process.wait()
+    os.chdir(current_dir)
     
     
 
