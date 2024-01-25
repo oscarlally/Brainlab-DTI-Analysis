@@ -7,11 +7,15 @@ This is a code base to analyise DTI raw files and create DTI objects for fusion 
  
 Please ensure you have downloaded Github desktop on your computer. This script can either be run locally or in a venv.  For either method, navigate to the folder on your computer where you want to save the code.  Once you have done this, open a terminal in that location and run the following command:
 
+```python
 git clone https://github.com/oscarlally/Brainlab-DTI-Analysis
+```
 
 If you already have python locally and want to run the codebase locally, make sure you are in the folder where the previous step has downloaded the Github repository and run this command:
 
+```python
 pip3 install -r requirements.txt
+```
 
 If you want to do this via a virtual environment, navigate to the project directory and run the commands:
 
