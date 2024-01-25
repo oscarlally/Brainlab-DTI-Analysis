@@ -27,7 +27,6 @@ python3 -m venv venv
 source venv/bin/activate
 
 pip3 install -r requirements.txt
-
 ```
 
 To install the dependencies and run this code in a virtual environment.
@@ -40,4 +39,10 @@ However, for the code to run, FSL, and MRTrix3 need to be installed on your loca
 
 To run this script, navigate to the directory that you have saved this code in, and run the following command:
 
-python3 run.py --debug (y/n), depending on if you want to run the script in debug mode or not.
+```python
+python3 run.py --debug y
+
+python3 run.py --debug n
+```
+
+Depending on if you want to run the script in debug mode (with a y tag) or not (with an n tag).
