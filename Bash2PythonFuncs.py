@@ -129,13 +129,11 @@ def get_bvalue_folders(pt_dir):
     
     
 def run(cmd):
-    current_dir = os.getcwd()
     home_dir = os.path.expanduser("~")
     functions_path = find_app('mrtrix3', '/usr/local/', home_dir)
-    functions_path = f"{functions_path}/bin"
-    os.chdir(functions_path)
+    functions_path = f"{functions_path}/bin/"
+    cmd_final = f"{functions_path}{cmd}"
     process = subprocess.run(cmd.split())
-    os.chdir(current_dir)
     
    
    
