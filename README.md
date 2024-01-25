@@ -22,8 +22,6 @@ If you want to do this via a virtual environment, navigate to the project direct
 ```python
 python3 -m venv venv
 
-.\venv\Scripts\activate
-
 source venv/bin/activate
 
 pip3 install -r requirements.txt
