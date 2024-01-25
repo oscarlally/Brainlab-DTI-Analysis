@@ -5,15 +5,27 @@ This is a code base to analyise DTI raw files and create DTI objects for fusion 
 ![](readme-resources/tractography.png)
 (credit Human Brain Project https://www.humanbrainproject.eu)
  
-Please ensure you have downloaded GitHub desktop on your computer. This script can either be run locally or in a venv.  For either method, navigate to the folder on your computer where you want to save the code.  Once you have done this, open a terminal in that location and run the following command:
+Please ensure you have downloaded Github desktop on your computer. This script can either be run locally or in a venv.  For either method, navigate to the folder on your computer where you want to save the code.  Once you have done this, open a terminal in that location and run the following command:
 
-git clone https://github.com/oscarlally/Brainlab-DTI-Analysis.git
+git clone https://github.com/oscarlally/Brainlab-DTI-Analysis
 
-Please ensure that once you have created the local environment, you run the following command:
+If you already have python locally and want to run the codebase locally, make sure you are in the folder where the previous step has downloaded the Github repository and run this command:
 
- pip3 install -r requirements.txt
- 
- However, FSL, and MRTrix3 need to be installed on your local computer.  The instructions to download these two pieces of software can be found here:
+pip3 install -r requirements.txt
+
+If you want to do this via a virtual environment, navigate to the project directory and run the commands:
+
+python3 -m venv venv
+
+.\venv\Scripts\activate
+
+source venv/bin/activate
+
+pip3 install -r requirements.txt
+
+To install the dependencies and run this code in a virtual environment.
+
+However, for the code to run, FSL, and MRTrix3 need to be installed on your local computer.  The instructions to download these two pieces of software can be found here:
 
 [https://github.com/MRtrix3/mrtrix3](https://www.mrtrix.org/download/)
 &
