@@ -39,7 +39,7 @@ def create_mask(pt_id, pt_dir, nii_list, debug):
         if continue_yn.lower() != 'y':
             rmtree(f"{pt_dir}Processed/6_mask/")
             os.makedirs(f"{pt_dir}Processed/6_mask/")
-            create_mask()
+            create_mask(pt_id, pt_dir, nii_list, debug)
         else:
             print('Mask Successfully Made')
  
