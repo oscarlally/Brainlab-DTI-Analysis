@@ -17,7 +17,7 @@ If you already have python locally and want to run the codebase locally, make su
 pip3 install -r requirements.txt
 ```
 
-If you want to do this via a virtual environment, navigate to the project directory and run the commands:
+If you want to do this via a virtual environment, navigate to the project directory and run the below commands.  However, you may need to do some rejigging of the paths as (FSL in particular) does not interact very well with a python virtual environment:
 
 ```python
 python3 -m venv venv
