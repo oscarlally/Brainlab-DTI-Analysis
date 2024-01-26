@@ -29,7 +29,7 @@ pip3 install -r requirements.txt
 
 To install the dependencies and run this code in a virtual environment.
 
-However, for the code to run, FSL, and MRTrix3 need to be installed on your local computer.  The instructions to download these two pieces of software can be found here:
+However, for the code to run, FSL, and MRtrix3 need to be installed on your local computer.  The instructions to download these two pieces of software can be found here:
 
 [https://github.com/MRtrix3/mrtrix3](https://www.mrtrix.org/download/)
 &
