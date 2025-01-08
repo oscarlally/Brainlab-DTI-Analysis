@@ -3,6 +3,7 @@ from functions import run
 
 current_dir = os.getcwd()
 
+
 def gentck():
     """Present tractography options and execute chosen operation."""
     print("\nTractography Options:")
