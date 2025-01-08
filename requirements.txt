@@ -1,4 +1,0 @@
-pydicom
-nibabel
-matplotlib
-SimpleITK
