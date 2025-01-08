@@ -1,618 +1,292 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on 15/02/2023
-
-@author: oscarlally
-"""
-
 import os
+import shutil
+from functions import check_and_handle_directories, \
+                      get_full_file_names, \
+                      delete_files_in_folder, \
+                      run, \
+                      get_volumes, \
+                      create_mask, \
+                      find_dir, \
+                      tensor_estimation, \
+                      convert_tracts, \
+                      copy_directory
+from generate_tracts import gentck
+from register import registration
+from intro import intro
+from roi_tck import roi_list, tck_list
 
-from Bash2PythonFuncs import BC, test_image, run, get_volumes
-from mask import create_mask
-from tensor_estimation import tensor_estimation
-from gentck import gentck
-from registration import registration
+# from registration import registration
+# process, mask (if needed), gentck, nifti
+
+# Define data directories
+home_dir = os.path.expanduser("~")
+diff_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/diffusion'
+struct_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/structural'
+pid = input('Please type in the patient number:  ')
+diff_data_dir = find_dir(pid, home_dir)
+
+import sys
+
+# Add the desired path to sys.path
+additional_path = "~/mrtrix3/bin/mrconvert"
+if additional_path not in sys.path:
+    sys.path.append(additional_path)
 
 
-#Lists to access files
-convert_files = []
-test_file = []
-concat_file = []
-denoise_file = []
-denoise_resid_file = []
-dwi_PA_denoise = []
+def main():
+    intro()
+    step = int(input('Please type in the step you would like to start on:  '))
+    cont = 'y'
 
+    # Centralized dictionary for all file paths
+    file_paths = {
+        "output_dirs": [
+            "mrtrix3_files/converted",
+            "mrtrix3_files/concatenated",
+            "mrtrix3_files/denoised",
+            "mrtrix3_files/calc",
+            "mrtrix3_files/degibbs",
+            "mrtrix3_files/eddy",
+            "mrtrix3_files/response",
+            "mrtrix3_files/masking",
+            "mrtrix3_files/tensors",
+            "mrtrix3_files/fods",
+            "mrtrix3_files/misc",
+            "mrtrix3_files/rois",
+            "mrtrix3_files/tracts",
+            "mrtrix3_files/t1",
+            "mrtrix3_files/overlays",
+            "mrtrix3_files/volumes",
+            "mrtrix3_files/template",
+            "mrtrix3_files/nifti"
+        ],
+        "converted": [],
+        "b0": None,
+        "b0_rev": None,
+        "concat_file": f"{os.getcwd()}/mrtrix3_files/concatenated/combined_dwi.mif",
+        "denoise_file": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_dwi.mif",
+        "denoise_ap": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_ap.mif",
+        "denoise_pa": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_pa.mif",
+        "resid_output": f"{os.getcwd()}/mrtrix3_files/calc/dwi_denoise_residuals.mif",
+        "degibbs_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs.mif",
+        "template_file": f"{os.getcwd()}/mrtrix3_files/template/template.dcm",
+        "t1_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t1.nii",
+        "t1_mif": f"{os.getcwd()}/mrtrix3_files/converted/t1.mif",
+        "degibbs_ap_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_ap.mif",
+        "degibbs_pa_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_pa.mif",
+        "degibbs_pair_file": f"{os.getcwd()}/mrtrix3_files/degibbs/degibbs_pair.mif",
+        "degibbs_ap_n": f"{os.getcwd()}/mrtrix3_files/degibbs/b0_AP_degibbs_N.mif",
+        "degibbs_ap_pa_n": f"{os.getcwd()}/mrtrix3_files/degibbs/b0_AP_PA_degibbs_N.mif",
+        "eddy_file": f"{os.getcwd()}/mrtrix3_files/eddy/dwi_preprocessed_eddy.mif",
+        "upsample_out": f"{os.getcwd()}/mrtrix3_files/eddy/dwi_eddy_upsamp.mif",
+        "response_wm": f"{os.getcwd()}/mrtrix3_files/response/response_wm.txt",
+        "response_gm": f"{os.getcwd()}/mrtrix3_files/response/response_gm.txt",
+        "response_csf": f"{os.getcwd()}/mrtrix3_files/response/response_csf.txt",
+        "response_voxels": f"{os.getcwd()}/mrtrix3_files/response/response_voxels.mif",
+        "fa": f"{os.getcwd()}/mrtrix3_files/tensors/fa.mif",
+        "ev": f"{os.getcwd()}/mrtrix3_files/tensors/ev.mif",
+        "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/tensors/dwi_tensor.mif",
+        "nii_file": '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
+    }
 
-def debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
+    # # Ensure output directories exist
+    # check_and_handle_directories(file_paths["output_dirs"])
 
-    """Initialise the method variable"""
-
-    method = None
-
-    """Information from the inputs of skip list tells which method to run"""
-
-    if sum(skip_list) == 0:
-
-        method = 4
-
-    else:
-
-        method = skip_list.index(1) + 1
-    
-    processed_dir = f"{pt_dir}Processed"
-    
-    nii_files = []
-    
-    template_file = []
-
-    """This method is for when you want to start from the beginning"""
-
-    if method == 4:
-    
-        """Use convert folder to convert and then concat - checking if the final file created in this junk already exists"""
-
-        if not os.path.exists(f"{processed_dir}/1_convert/b_all.mif"):
-
-            for i in bvalue_folders:
-
-                if 't1' not in i and 'T1' not in i:
-
-                    if 'PA' in i and 'flipped' not in i:
-
-                        """Getting the reverse phase encoding file"""
-
-                        output = f"{processed_dir}/1_convert/rev_b0_PA.mif"
-
+    if step == 1 and cont.lower() == 'y':
+        # Convert diffusion files to .mif and categorize by type
+        for i in get_full_file_names(diff_data_dir):
+            if 'ep2d' in i.lower() and 'fa' not in i.lower():
+                convert = f"{os.getcwd()}/mrtrix3_files/converted/{os.path.basename(i)}.mif"
+                result_cmd = f"mrconvert {i} {convert}"
+                run(result_cmd)
+                file_paths["converted"].append(convert)
+                if 'b0' in i.lower():
+                    if 'flipped' in i.lower():
+                        file_paths["b0_rev"] = convert
                     else:
-
-                        """The rest of the files that are not reversed phase encoding or t1"""
-
-                        output = f"{processed_dir}/1_convert/{i.split('/')[-2]}.mif"
-
-                    """First converted file path is appended"""
-
-                    convert_files.append(output)
-
-                    """Converting all of the files into .mif files"""
-
-                    mrconvert_cmd = f"mrconvert {i} {output} -force"
-
-                    mrinfo_cmd = f"mrinfo {output} -shell_bvalues"
-
-                    run(mrconvert_cmd)
-
-                    run(mrinfo_cmd)
-
-                """Specific code for the t1 file as it needs to be converted to a .nii as well"""
-                
-                if 't1' in i or 'T1' in i:
-
-                    files = os.listdir(i)
-
-                    for j in files:
-
-                        if 'dcm' in j:
-
-                            t1_dcm = f"{i}{j}"
-
-                            template_file.append(t1_dcm)
-
-                            """Specify the conversion parameters and directory for the nii"""
-
-                            t1_nii = f"{processed_dir}/11_nifti/t1.nii.gz"
-
-                            t1_conv_cmd = f"mrconvert -strides -1,2,3 {t1_dcm} {t1_nii}"
-
-                            """Conversion of t1 to mif here"""
-
-                            output = f"{processed_dir}/1_convert/{i.split('/')[-2]}.mif"
-
-                            mrconvert_cmd = f"mrconvert {i} {output} -force"
-
-                            nii_files.append(t1_dcm)
-
-                            run(t1_conv_cmd)
-
-                            run(mrconvert_cmd)
-
-        convert_dir = f"{processed_dir}/1_convert/"
-
-        phase_files = os.listdir(convert_dir)
-
-        for i in phase_files:
-
-            if 'ap' in i.lower() or 'rev' in i.lower():
-
-                ap_size_pre = get_volumes(f"{convert_dir}{i}")
-
-            if 'pa' in i.lower():
-
-                pa_size_pre = get_volumes(f"{convert_dir}{i}")
-    
-        print("DEBUG STEP: Check all images in b0 file look like the signal intensity of a b0 image")
-
-        print(convert_files)
-
-        b_size, test_bval = test_image(convert_files, test_file)
-
-        print(f"The test image (b{test_bval}) has {b_size} volumes.")
-
-        dwiextract_cmd = f"dwiextract {test_file[0]} {test_file[1]} -force"
-
-        mrview_cmd = f"mrview -load {output} -interpolation 0"
-
-        run(dwiextract_cmd)
-
-        run(mrview_cmd)
-
-        print("Concatenate data in 1_convert file")
-
-        output = f"{os.path.split(output)[0]}/b_all.mif"
-
-        concat_file.append(output)
-
-        BC('mrcat', convert_files, output, '-force')
-
-        """DENOISE steps"""
-
-        if not os.path.isfile(f"{processed_dir}/2_denoise/dwi_denoise.mif"):
-
-            print("Step 2: Denoising the data")
-
-            # Call dwidenoise function with appropriate arguments
-
-            output = f"{processed_dir}/2_denoise/dwi_denoise.mif"
-
-            denoise_file.append(output)
-
-            dwidenoise_cmd = f"dwidenoise {concat_file[0]} {output} -force"
-
-            run(dwidenoise_cmd)
-
-            # Call mrcalc function with appropriate arguments
-
-            resid_output = f"{processed_dir}/2_denoise/dwi_denoise_residuals.mif"
-
-            denoise_resid_file.append(resid_output)
-
-            BC('mrcalc', concat_file[0], output, '-subtract', resid_output, '-force')
-
-            output_PA = f"{processed_dir}/2_denoise/dwi_PA_denoise.mif"
-
-            dwi_PA_denoise.append(output_PA)
-
-            rev_file = []
-
-            """Getting the file with reverse phase encoding for the denoising"""
-
-            for i in convert_files:
-
-                if 'rev' in i:
-
-                    rev_file.append(i)
-
-            dwidenoise_cmd = f"dwidenoise {rev_file[0]} {output_PA} -force"
-
-            run(dwidenoise_cmd)
-
-        print("DEBUG STEP: Check the denoised data and residuals in mrview")
-
-        # Call mrview function with appropriate arguments
-
-        mrview_cmd = f"mrview -load {concat_file[0]} -interpolation 0 -load {denoise_file[0]} -interpolation 0 -load {denoise_resid_file[0]} -interpolation 0 "
-
-        run(mrview_cmd)
-            
-        """DEGIBBS step"""
-
-        degibbs_input_1 = f"{processed_dir}/2_denoise/dwi_denoise.mif"
-        degibbs_input_2 = f"{processed_dir}/2_denoise/dwi_PA_denoise.mif"
-        degibbs_output_1 = f"{processed_dir}/3_degibbs/dwi_degibbs.mif"
-        degibbs_output_2 = f"{processed_dir}/3_degibbs/b0_PA_degibbs.mif"
-        dwi_extract_output_1 = f"{processed_dir}/3_degibbs/b0_AP_degibbs.mif"
-
-        if not os.path.isfile(degibbs_output_1):
-
-            print("Step 3: Remove GIBBS ringing artfact")
-
-            # Call mrdegibbs function with appropriate arguments
-
-            degibbs_cmd_1 = f"mrdegibbs {degibbs_input_1} {degibbs_output_1} -force"
-
-            run(degibbs_cmd_1)
-
-            # Call mrdegibbs function again with different arguments
-
-            degibbs_cmd_2 = f"mrdegibbs {degibbs_input_2} {degibbs_output_2} -force"
-
-            run(degibbs_cmd_2)
-
-        print("DEBUG STEP: Check the the degibbs results in mrview")
-
-        # Call mrview function with appropriate arguments
-
-        BC('mrview', '-load', degibbs_input_1, '-interpolation 0 -load', degibbs_output_1, '-interpolation 0')
-
-        os.chdir(f"{pt_dir}Processed")
-
-        dwiextract_eddy_cmd = f"dwiextract -bzero {degibbs_output_1} {dwi_extract_output_1} -force"
-
-        run(dwiextract_eddy_cmd)
-        
-        print()
-
-        pa_size = get_volumes(degibbs_input_2)
-
-        ap_size = get_volumes(degibbs_output_2)
+                        file_paths["b0"] = convert
+        step += 1
+        cont = 'y'
+
+    if step == 2 and cont.lower() == 'y':
+        # Convert T1 file
+        for i in get_full_file_names(struct_data_dir):
+            if 't1' in i.lower() and 'dis3d' in i.lower():
+                t1_file = get_full_file_names(i)[0]
+                shutil.copy(t1_file, file_paths['template_file'])
+                run(f"mrconvert {t1_file} {file_paths['t1_mif']}")
+                run(f"mrconvert -strides -1,2,3 {t1_file} {file_paths['t1_nii']}")
+        step += 1
+        cont = 'y'
+
+    if step == 3 and cont.lower() == 'y':
+        # Concatenate diffusion files excluding `b0` or flipped files
+        cat_cmd = "mrcat "
+        for i in file_paths["converted"]:
+            if 'b0' not in i.lower() and 'flipped' not in i.lower():
+                cat_cmd += f"{i} "
+        cat_cmd += f"{file_paths['concat_file']}"
+        run(cat_cmd)
+        extract_cmd = f"dwiextract {file_paths['concat_file']} {file_paths['b0']} -bzero -force"
+        run(extract_cmd)
+        step += 1
+        cont = 'y'
+
+    if step == 4 and cont.lower() == 'y':
+        # Denoise files
+        run(f"dwidenoise {file_paths['concat_file']} {file_paths['denoise_file']}")
+        run(f"dwidenoise {file_paths['b0']} {file_paths['denoise_ap']}")
+        run(f"dwidenoise {file_paths['b0_rev']} {file_paths['denoise_pa']}")
+
+        # Calculate residuals
+        calc_cmd = f"mrcalc {file_paths['concat_file']} {file_paths['denoise_file']} -subtract {file_paths['resid_output']}"
+        run(calc_cmd)
+        step += 1
+        cont = 'y'
+
+    if step == 5 and cont.lower() == 'y':
+        # Degibbs processing
+        run(f"mrdegibbs {file_paths['denoise_pa']} {file_paths['degibbs_pa_file']}")
+        run(f"mrdegibbs {file_paths['denoise_file']} {file_paths['degibbs_file']}")
+        run(f"dwiextract -bzero {file_paths['degibbs_file']} {file_paths['degibbs_ap_file']}")
+
+        pa_size = get_volumes(file_paths['degibbs_file'])
+        ap_size = get_volumes(file_paths['degibbs_ap_file'])
+        pa_size_pre = get_volumes(file_paths["b0_rev"])
+        ap_size_pre = get_volumes(file_paths["b0"])
 
         if ap_size == pa_size == pa_size_pre == ap_size_pre:
 
             print(f"There are {pa_size} volumes in the PA image and there are {ap_size} volumes in the AP image.")
 
-        else:
+        # Concatenate degibbs files
+        run(f"mrcat {file_paths['degibbs_ap_file']} {file_paths['degibbs_pa_file']} {file_paths['degibbs_pair_file']} -force")
 
-            print(f"Originally there were {pa_size_pre} volumes in the PA image and {ap_size_pre} volumes in the AP image.")
-
-            print(f"Now there are {pa_size} volumes in the PA image and there are {ap_size} volumes in the AP image.")
+        # Extract the last 2 * N_B0_PA images
+        N_B0_PA = 4
+        run(f"mrconvert {file_paths['degibbs_ap_file']} -coord 3 1:{N_B0_PA} {file_paths['degibbs_ap_n']} -quiet -force")
+        run(f"mrcat {file_paths['degibbs_ap_n']} {file_paths['degibbs_pa_file']} {file_paths['degibbs_ap_pa_n']} -force")
 
         print()
+        print('--------------------------')
+        print('Please assess the processed files before running the eddy current correction.')
+        run(f"mrview -load {file_paths['degibbs_ap_pa_n']} -interpolation 0")
 
-        mrview_cmd_1 = f"mrview -load {degibbs_input_2} -interpolation 0"
+        step += 1
+        cont = input('Continue? (y/n): ')
 
-        mrview_cmd_2 = f"mrview -load {degibbs_output_2} -interpolation 0"
+    if step == 6 and cont.lower() == 'y':
+        # Eddy current corrections
+        preproc_cmd = f"dwifslpreproc {file_paths['degibbs_file']} {file_paths['eddy_file']} -rpe_pair -se_epi {file_paths['degibbs_ap_pa_n']} -pe_dir ap -force"
+        run(preproc_cmd)
 
-        run(mrview_cmd_1)
+        mrgrid_cmd = f"mrgrid {file_paths['eddy_file']} regrid -voxel 1.3 {file_paths['upsample_out']} -force"
+        run(mrgrid_cmd)
 
-        run(mrview_cmd_2)
+        step += 1
+        cont = input('Continue? (y/n): ')
 
-        """EDDY CURRENTS"""
-    
-        N = min(pa_size, ap_size)
-
-        convert_output = f"{processed_dir}/3_degibbs/b0_AP_degibbs_N.mif"
-
-        cat_output = f"{processed_dir}/3_degibbs/b0_degibbs_AP_PA.mif "
-
-        mrconvert_cmd = f"mrconvert {dwi_extract_output_1} -coord 3 1:{N} {convert_output} -quiet -force"
-
-        mrcat_cmd = f"mrcat {convert_output} {degibbs_output_2} {cat_output} -force"
-
-        run(mrconvert_cmd)
-
-        run(mrcat_cmd)
-
-        print("DEBUG STEP: Check the resulting data has $N_B0_PA images with phase encoding AP followed by $N_B0_PA images phase encoded PA")
-
-        mrview_cmd = f"mrview -load {cat_output} -interpolation 0 -force"
-
-        run(mrview_cmd)
-        
-        print("Phase encoding direction not in header info, code automatically uses ap")
-        
-        dwi_eddy_file = f"{processed_dir}/4_eddy/dwi_eddy.mif"
-
-        if not os.path.exists(dwi_eddy_file):
-
-            dwifslpreproc_cmd = f"dwifslpreproc {degibbs_output_1} {dwi_eddy_file} -rpe_pair -se_epi {cat_output} -pe_dir ap -force"
-
-            run(dwifslpreproc_cmd)
-            
-            # Upsample the DWI data with mrgrid
-
-            upsample_out = f"{processed_dir}/4_eddy/dwi_eddy_upsamp.mif"
-
-            mrgrid_cmd = f"mrgrid {dwi_eddy_file} regrid -voxel 1.3 {upsample_out} -force"
-
-            run(mrgrid_cmd)
-
-        print("DEBUG STEP: Check the eddy results")
-
-        mrview_cmd = f"mrview {degibbs_output_1} -interpolation 0 -load {dwi_eddy_file} -interpolation 0 -force"
-
-        run(mrview_cmd)
-            
-        """RESPONSE steps"""
-
-        response_wm = f"{processed_dir}/5_response/response_wm.txt"
-
-        response_gm = f"{processed_dir}/5_response/response_gm.txt"
-
-        response_csf = f"{processed_dir}/5_response/response_csf.txt"
-
-        response_voxels = f"{processed_dir}/5_response/response_voxels.mif"
-
-        if not os.path.exists(response_wm):
-
-            print("Step 5: Response function")
-
-            # Estimate the response functions for WM, GM and CSF
-
-            dwi2response_cmd = f"dwi2response dhollander {dwi_eddy_file} {response_wm} {response_gm} {response_csf} -voxels {response_voxels} -force"
-
+    if step == 7 and cont.lower() == 'y':
+        # Get response functions
+        if not os.path.exists(file_paths['response_wm']):
+            print("Step 7: Response function")
+            # Estimate the response functions for WM, GM, and CSF
+            dwi2response_cmd = (
+                f"dwi2response dhollander {file_paths['upsample_out']} {file_paths['response_wm']} "
+                f"{file_paths['response_gm']} {file_paths['response_csf']} -voxels {file_paths['response_voxels']} -force"
+            )
             run(dwi2response_cmd)
 
-
-        print("DEBUG STEP: Check the response functions and the voxel positions")
-
-        print(" The WM should go from sphere to flat. The GM and CSF should go from sphere to smaller sphere")
-
-        shview_wm_cmd = f"shview {response_wm}"
-
-        shview_gm_cmd = f"shview {response_gm}"
-
-        shview_csf_cmd = f"shview {response_csf}"
-
-        run(shview_wm_cmd)
-
-        run(shview_gm_cmd)
-
-        run(shview_csf_cmd)
+        run(f"shview {file_paths['response_wm']}")
+        run(f"shview {file_paths['response_gm']}")
+        run(f"shview {file_paths['response_csf']}")
 
         print("Check the voxels are assigned to the correct tissue types. RED = CSF, GREEN = GM, BLUE = WM")
+        run(
+            f"mrview -load {file_paths['upsample_out']} -interpolation 0 "
+            f"-overlay.load {file_paths['response_voxels']} -overlay.interpolation 0"
+        )
 
-        mrview_cmd = f"mrview -load {dwi_eddy_file} -interpolation 0 -overlay.load {response_voxels} -overlay.interpolation 0"
+        step += 1
+        cont = input('Continue? (y/n): ')
 
-        run(mrview_cmd)
+    if step == 8 and cont.lower() == 'y':
+        # Masking
+        nii_files = []
+        create_mask(nii_files, 'debug')
+        file_paths['nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
 
-        print()
-        
-        create_mask(pt_id, pt_dir, nii_files, 'debug')
+        step += 1
+        cont = input('Continue? (y/n): ')
 
-        tensor_estimation(pt_dir, DWI_shell, 'debug')
+    if step == 9 and cont.lower() == 'y':
+        # Tensors
+        dwi_shell = input('Is the data multi-shelled? (y/n): ')
+        tensor_estimation(dwi_shell, 'debug')
+        step += 1
+        cont = input('Continue? (y/n): ')
 
-        tract_name = gentck(pt_dir, 'debug')
-
-        registration(pt_dir, template_file, tract_name, 'debug')
-        
-    else:
-
-        if len(template_file) == 0:
-
-            for i in bvalue_folders:
-
-                if 't1' in i or 'T1' in i:
-
-                    files = os.listdir(i)
-
-                    for j in files:
-
-                        if '.dcm' in j:
-
-                            template_file.append(f"{i}{j}")
-
-        if len(nii_files) == 0:
-
-            nii_dir = f"{pt_dir}Processed/11_nifti/"
-
-            files = os.listdir(nii_dir)
-
-            for j in files:
-
-                if 't1' in j.lower():
-
-                    nii_files.append(f"{nii_dir}{j}")
-                    
-        if method == 1:
-
-            create_mask(pt_id, pt_dir, nii_files, 'debug')
-
-            tensor_estimation(pt_dir, DWI_shell, 'debug')
-
-            tract_name = gentck(pt_dir, 'debug')
-
-            registration(pt_dir, template_file, tract_name, 'debug')
-            
-        elif method == 2:
-
-            tract_name = gentck(pt_dir, 'debug')
-
-            registration(pt_dir, template_file, tract_name, 'debug')
-
-        elif method == 3:
-
-            tract_name = input('Please type in the tract name for labelling purposes:  ')
-
-            registration(pt_dir, template_file, tract_name, 'debug')
-
-
-
-def no_debug(skip_list, bvalue_folders, pt_dir, pt_id, DWI_shell):
-
-    method = None
-
-    if sum(skip_list) == 0:
-
-        method = 4
-
-    else:
-        method = skip_list.index(1) + 1
-        
-    processed_dir = f"{pt_dir}Processed"
-    
-    nii_files = []
-    
-    template_file = []
-
-    if method == 4:
-    
-        # Use convert folder to convert and then concat
-        if not os.path.exists(f"{processed_dir}/1_convert/b_all.mif"):
-            for i in bvalue_folders:
-                
-                if 't1' not in i and 'T1' not in i:
-                    if 'PA' in i and 'flipped' not in i:
-                        output = f"{processed_dir}/1_convert/rev_b0_PA.mif"
-                    else:
-                        output = f"{processed_dir}/1_convert/{i.split('/')[-2]}.mif"
-                    convert_files.append(output)
-                    mrconvert_cmd = f"mrconvert {i} {output} -force"
-
-                    run(mrconvert_cmd)
-                    mrinfo_cmd = f"mrinfo {output} -shell_bvalues"
-                    run(mrinfo_cmd)
-                
-                if 't1' in i or 'T1' in i:
-                    files = os.listdir(i)
-                    for j in files:
-                        if 'dcm' in j:
-                            t1_dcm = f"{i}{j}"
-                            t1_nii = f"{processed_dir}/11_nifti/t1.nii.gz"
-                            t1_conv_cmd = f"mrconvert -strides -1,2,3 {t1_dcm} {t1_nii}"
-                            output = f"{processed_dir}/1_convert/{i.split('/')[-2]}.mif"
-                            mrconvert_cmd = f"mrconvert {i} {output} -force"
-                            nii_files.append(t1_dcm)
-                            run(t1_conv_cmd)
-                            run(mrconvert_cmd)
-                            
-
-    
-                            
-        convert_dir = f"{processed_dir}/1_convert/"
-        phase_files = os.listdir(convert_dir)
-        for i in phase_files:
-            if 'ap' in i.lower() or 'rev' in i.lower():
-                ap_size_pre = get_volumes(f"{convert_dir}{i}")
-            if 'pa' in i.lower():
-                pa_size_pre = get_volumes(f"{convert_dir}{i}")
-                
-
-        print("Concatenating data into a single_convert file")
-        output = f"{os.path.split(output)[0]}/b_all.mif"
-        concat_file.append(output)
-        BC('mrcat', convert_files, output, '-force')
-
-
-        """DENOISE"""
-
-        if not os.path.isfile(f"{processed_dir}/2_denoise/dwi_denoise.mif"):
-            print("Step 2: Denoising the data")
-            # Call dwidenoise function with appropriate arguments
-            output = f"{processed_dir}/2_denoise/dwi_denoise.mif"
-            denoise_file.append(output)
-            dwidenoise_cmd = f"dwidenoise {concat_file[0]} {output} -force"
-            run(dwidenoise_cmd)
-            # Call mrcalc function with appropriate arguments
-            resid_output = f"{processed_dir}/2_denoise/dwi_denoise_residuals.mif"
-            denoise_resid_file.append(resid_output)
-            BC('mrcalc', concat_file[0], output, '-subtract', resid_output, '-force')
-            output_PA = f"{processed_dir}/2_denoise/dwi_PA_denoise.mif"
-            dwi_PA_denoise.append(output_PA)
-            rev_file = []
-            for i in convert_files:
-                if 'rev' in i:
-                    rev_file.append(i)
-            dwidenoise_cmd = f"dwidenoise {rev_file[0]} {output_PA} -force"
-            run(dwidenoise_cmd)
-
-            
-        """DEGIBBS"""
-
-        degibbs_input_1 = f"{processed_dir}/2_denoise/dwi_denoise.mif"
-        degibbs_input_2 = f"{processed_dir}/2_denoise/dwi_PA_denoise.mif"
-        degibbs_output_1 = f"{processed_dir}/3_degibbs/dwi_degibbs.mif"
-        degibbs_output_2 = f"{processed_dir}/3_degibbs/b0_PA_degibbs.mif"
-        dwi_extract_output_1 = f"{processed_dir}/3_degibbs/b0_AP_degibbs.mif"
-
-        if not os.path.isfile(degibbs_output_1):
-            print("Step 3: Remove GIBBS ringing artfact")
-            # Call mrdegibbs function with appropriate arguments
-            degibbs_cmd_1 = f"mrdegibbs {degibbs_input_1} {degibbs_output_1} -force"
-            run(degibbs_cmd_1)
-            # Call mrdegibbs function again with different arguments
-            degibbs_cmd_2 = f"mrdegibbs {degibbs_input_2} {degibbs_output_2} -force"
-            run(degibbs_cmd_2)
-
-
-        os.chdir(f"{pt_dir}Processed")
-        dwiextract_eddy_cmd = f"dwiextract -bzero {degibbs_output_1} {dwi_extract_output_1} -force"
-        run(dwiextract_eddy_cmd)
-        
-        print()
-        pa_size = get_volumes(degibbs_input_2)
-        ap_size = get_volumes(degibbs_output_2)
-        if ap_size == pa_size == pa_size_pre == ap_size_pre:
-            print(f"There are {pa_size} volumes in the PA image and there are {ap_size} volumes in the AP image.")
-        else:
-            print(f"Originally there were {pa_size_pre} volumes in the PA image and {ap_size_pre} volumes in the AP image.")
-            print(f"Now there are {pa_size} volumes in the PA image and there are {ap_size} volumes in the AP image.")
+    if step == 10 and cont.lower() == 'y':
+        # Create ROIs
+        for i in roi_list:
+            print(i)
         print()
 
-        
-        
-        """EDDY CURRENTS"""
-    
-        N = min(pa_size, ap_size)
-        convert_output = f"{processed_dir}/3_degibbs/b0_AP_degibbs_N.mif"
-        cat_output = f"{processed_dir}/3_degibbs/b0_degibbs_AP_PA.mif "
-        mrconvert_cmd = f"mrconvert {dwi_extract_output_1} -coord 3 1:{N} {convert_output} -quiet -force"
-        mrcat_cmd = f"mrcat {convert_output} {degibbs_output_2} {cat_output} -force"
-        run(mrconvert_cmd)
-        run(mrcat_cmd)
-        
-        
+        while True:
+            print('Please save any ROIs in the roi folder in the sub directory /mrtrix3/rois that is in the directory of this code.')
+            print('This should be obvious as one of the sub directories will appear at the top of the ROI editor.')
+            print()
+            choice = input('Do you need to create any ROIs? (y/n). ')
+            print()
+            print('Please save the ROI under the following names for the script to be able to find them'.upper())
 
-        print("Phase encoding direction not in header info, code automatically uses ap")
-        
-        dwi_eddy_file = f"{processed_dir}/4_eddy/dwi_eddy.mif"
-        if not os.path.exists(dwi_eddy_file):
-            dwifslpreproc_cmd = f"dwifslpreproc {degibbs_output_1} {dwi_eddy_file} -rpe_pair -se_epi {cat_output} -pe_dir ap -force"
-            run(dwifslpreproc_cmd)
-            
-            # Upsample the DWI data with mrgrid
-            upsample_out = f"{processed_dir}/4_eddy/dwi_eddy_upsamp.mif"
-            mrgrid_cmd = f"mrgrid {dwi_eddy_file} regrid -voxel 1.3 {upsample_out} -force"
-            run(mrgrid_cmd)
-        
-            
-        """RESPONSE"""
+            if choice.lower() == 'y':
+                run('echo -e "Opening mrview"')
+                message = "Step 8: Draw ROIs"
+                message = "\033[32m" + message + "\033[0m"
+                command = "echo {}".format(message)
+                run(command)
 
-        response_wm = f"{processed_dir}/5_response/response_wm.txt"
-        response_gm = f"{processed_dir}/5_response/response_gm.txt"
-        response_csf = f"{processed_dir}/5_response/response_csf.txt"
-        response_voxels = f"{processed_dir}/5_response/response_voxels.mif"
-        if not os.path.exists(response_wm):
-            print("Step 5: Response function")
-            # Estimate the response functions for WM, GM and CSF
-            dwi2response_cmd = f"dwi2response dhollander {dwi_eddy_file} {response_wm} {response_gm} {response_csf} -voxels {response_voxels} -force"
-            run(dwi2response_cmd)
+                # step size should be 0.5xvoxelsize (currently set to 1)
+                fa = file_paths['fa']
+                ev = file_paths['ev']
+                dwi_tensor = file_paths['dwi_tensor']
 
-        print()
-        
-        create_mask(pt_id, pt_dir, nii_files, 'no_debug')
-        tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-        tract_name = gentck(pt_dir, 'no_debug')
-        registration(pt_dir, template_file, tract_name, 'no_debug')
-        
-    else:
-    
-        if len(template_file) == 0:
-            for i in bvalue_folders:
-                if 't1' in i or 'T1' in i:
-                    files = os.listdir(i)
-                    for j in files:
-                        if '.dcm' in j:
-                            template_file.append(f"{i}{j}")
-    
-        if len(nii_files) == 0:
-            nii_dir = f"{pt_dir}Processed/11_nifti/"
-            files = os.listdir(nii_dir)
-            for j in files:
-                if 't1' in j.lower():
-                    nii_files.append(f"{nii_dir}{j}")
+                view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
+                run(view_cmd)
 
-            
-        if method == 1:
-            create_mask(pt_id, pt_dir, nii_files, 'no_debug')
-            tensor_estimation(pt_dir, DWI_shell, 'no_debug')
-            tract_name = gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file, tract_name, 'no_debug')
-            
-        elif method == 2:
-            tract_name = gentck(pt_dir, 'no_debug')
-            registration(pt_dir, template_file, tract_name, 'no_debug')
+                break
+            elif choice.lower() == 'n':
+                print('Continue with analysis using ROIs already generated')
+                break
+            else:
+                message = "Invalid response"
+                message = "\033[31m" + message + "\033[0m"
+                command = "echo {}".format(message)
+                run(command)
 
-        elif method == 3:
-            tract_name = input('Please type in the tract name for labelling purposes:  ')
-            registration(pt_dir, template_file, tract_name, 'debug')
+        step += 1
+        cont = input('Continue? (y/n): ')
 
+    if step == 11 and cont.lower() == 'y':
+        tract_names = []
+        finished = False
+        while finished is False:
+            tract_name = gentck()
+            tract_names.append(tract_name)
+            check = input('Are you happy with the tract (y/n):  ')
+            if check == 'y':
+                check_two = input('Would you like to create another tract (y/n):  ')
+                if check_two == 'n':
+                    finished = True
+
+        convert_tracts(file_paths['t1_mif'], 'debug')
+        step += 1
+        cont = input('Continue? (y/n): ')
+
+    if step == 12 and cont.lower() == 'y':
+        convert_tracts(file_paths['t1_mif'], 'debug')
+        registration(file_paths['template_file'], file_paths['t1_nii'], diff_data_dir, 'debug')
+
+
+main()

@@ -1,3 +1,4 @@
+from datetime import datetime
 import nibabel as nib
 import numpy as np
 import pydicom
@@ -58,14 +59,19 @@ def create_brainlab_object(tract_name, nifti_file_path, reference_dicom_path, ou
 
     # Set WindowCenter and WindowWidth based on the peak value
     dicom_file.WindowCenter = int(max_value*wind_factor)
+    current_datetime = datetime.now()
+    formatted_datetime = current_datetime.strftime('%Y%m%d%H%M%S')
+    series_time = current_datetime.strftime('%H%M%S')
 
     dicom_file.SeriesDescription = f"Brainlab_Object_{tract}"
     dicom_file.ProtocolName = f"Brainlab_Object_{tract}"
     dicom_file.InstitutionName = "Guy's and St Thomas'"
     dicom_file.StudyDescription = f"fMRI Motor {tract}"
+    dicom_file.AcquisitionDateTime = formatted_datetime
     dicom_file.StudyInstanceUID = ''.join(random.choices(string.digits, k=8))
     dicom_file.SeriesInstanceUID = ''.join(random.choices(string.digits, k=8))
     dicom_file.StudyID = ''.join(random.choices(string.digits, k=8))
+    dicom_file.ContentTime = f"{series_time}.000000"
 
     # Save as a new DICOM file
     dicom_file.save_as(output_dicom_path)

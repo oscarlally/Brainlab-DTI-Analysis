@@ -2,3 +2,4 @@ pydicom
 nibabel
 matplotlib
 SimpleITK
+nibabel
