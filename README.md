@@ -38,9 +38,5 @@ However, for the code to run, FSL, and MRtrix3 need to be installed on your loca
 To run this script, navigate to the directory that you have saved this code in (usually /Users/yourname/Github/Brainlab-DTI-Analysis), and run the following command:
 
 ```python
-python3 run.py --debug y
-
-python3 run.py --debug n
+python3 main.py
 ```
-
-Depending on if you want to run the script in debug mode (with a y tag) or not (with an n tag).
