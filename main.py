@@ -90,7 +90,7 @@ def main():
     }
 
     # # Ensure output directories exist
-    # check_and_handle_directories(file_paths["output_dirs"])
+    check_and_handle_directories(file_paths["output_dirs"])
 
     if step == 1 and cont.lower() == 'y':
         # Convert diffusion files to .mif and categorize by type
