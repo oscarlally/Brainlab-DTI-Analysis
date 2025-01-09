@@ -20,8 +20,6 @@ from roi_tck import roi_list, tck_list
 
 # Define data directories
 home_dir = os.path.expanduser("~")
-diff_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/diffusion'
-struct_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/structural'
 pid = input('Please type in the patient number:  ')
 diff_data_dir = find_dir(pid, home_dir)
 
@@ -86,7 +84,7 @@ def main():
         "fa": f"{os.getcwd()}/mrtrix3_files/tensors/fa.mif",
         "ev": f"{os.getcwd()}/mrtrix3_files/tensors/ev.mif",
         "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/tensors/dwi_tensor.mif",
-        "nii_file": '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
+        "nii_file": f"{os.getcwd()}/mrtrix3_files/masking/extracted_b0.nii"
     }
 
     # # Ensure output directories exist
