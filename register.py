@@ -255,7 +255,7 @@ def registration(template_file, t1_nii, diff_data_dir, debug):
             print()
 
             if happy.lower() == 'y':
-                copy_directory(os.getcwd(), f"{diff_data_dir}/Processed")
+                copy_directory(f"{os.getcwd()}/mrtrix3_files", f"{diff_data_dir}/Processed")
                 break
 
         print()
