@@ -212,7 +212,7 @@ def main():
         # Masking
         nii_files = []
         create_mask(nii_files, 'debug')
-        file_paths['nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
+        file_paths['nii_file'] = f"{os.getcwd()}/mrtrix3_files/masking/extracted_b0.nii"
 
         step += 1
         cont = input('Continue? (y/n): ')
@@ -225,6 +225,8 @@ def main():
         cont = input('Continue? (y/n): ')
 
     if step == 10 and cont.lower() == 'y':
+        print("Please choose the names from the below list of ROIs")
+        print()
         # Create ROIs
         for i in roi_list:
             print(i)
