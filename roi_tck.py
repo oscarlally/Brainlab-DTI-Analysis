@@ -38,8 +38,8 @@ tck_list = [
     "mrtrix3-MHA_L.tck",
     "mrtrix3-MHA_R.tck",
     "mrtrix3-MHA_L.tck",
-    "mrtrix3-R_Lip.tck",
-    "mrtrix3-L_Lip.tck",
-    "mrtrix3-L_OR_UNI.tck",
-    "mrtrix3-R_OR_UNI.tck",
+    "mrtrix3_R_Lip.tck",
+    "mrtrix3_L_Lip.tck",
+    "mrtrix3_L_OR_UNI.tck",
+    "mrtrix3_R_OR_UNI.tck",
 ]
