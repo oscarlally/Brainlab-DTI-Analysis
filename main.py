@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from functions import check_and_handle_directories, \
                       get_full_file_names, \
@@ -15,15 +16,14 @@ from register import registration
 from intro import intro
 from roi_tck import roi_list, tck_list
 
-# from registration import registration
-# process, mask (if needed), gentck, nifti
 
 # Define data directories
 home_dir = os.path.expanduser("~")
+diff_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/diffusion'
+struct_data_dir = '/Users/oscarlally/Desktop/CCL/170097852/structural'
 pid = input('Please type in the patient number:  ')
 diff_data_dir = find_dir(pid, home_dir)
 
-import sys
 
 # Add the desired path to sys.path
 additional_path = "~/mrtrix3/bin/mrconvert"
@@ -84,11 +84,19 @@ def main():
         "fa": f"{os.getcwd()}/mrtrix3_files/tensors/fa.mif",
         "ev": f"{os.getcwd()}/mrtrix3_files/tensors/ev.mif",
         "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/tensors/dwi_tensor.mif",
-        "nii_file": f"{os.getcwd()}/mrtrix3_files/masking/extracted_b0.nii"
+        "nii_file": '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
     }
 
-    # # Ensure output directories exist
-    check_and_handle_directories(file_paths["output_dirs"])
+    # Ensure output directories exist
+    # check_and_handle_directories(file_paths["output_dirs"])
+
+    b0s_check = get_full_file_names(f"{os.getcwd()}/mrtrix3_files/converted")
+    if len(b0s_check) != 0:
+        for i in b0s_check:
+            if 'b0' in i and 'flipped' in i:
+                file_paths["b0_rev"] = i
+            if 'b0' in i and 'flipped' not in i:
+                file_paths["b0"] = i
 
     if step == 1 and cont.lower() == 'y':
         # Convert diffusion files to .mif and categorize by type
@@ -212,7 +220,7 @@ def main():
         # Masking
         nii_files = []
         create_mask(nii_files, 'debug')
-        file_paths['nii_file'] = f"{os.getcwd()}/mrtrix3_files/masking/extracted_b0.nii"
+        file_paths['nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
 
         step += 1
         cont = input('Continue? (y/n): ')
@@ -225,8 +233,6 @@ def main():
         cont = input('Continue? (y/n): ')
 
     if step == 10 and cont.lower() == 'y':
-        print("Please choose the names from the below list of ROIs")
-        print()
         # Create ROIs
         for i in roi_list:
             print(i)
@@ -271,14 +277,28 @@ def main():
     if step == 11 and cont.lower() == 'y':
         tract_names = []
         finished = False
+        defaults = None
+        choice = None
         while finished is False:
-            tract_name = gentck()
+            tract_name, defaults, choice = gentck(defaults, choice)
             tract_names.append(tract_name)
             check = input('Are you happy with the tract (y/n):  ')
             if check == 'y':
-                check_two = input('Would you like to create another tract (y/n):  ')
+                check_two = input('Would you like to create another tract (y/n)?:  ')
                 if check_two == 'n':
                     finished = True
+            else:
+                print()
+                if len(defaults) == 3:
+                    print(f"Current step is {defaults[0]}, current angle is {defaults[1]} and current step is {defaults[2]}.")
+                if len(defaults) == 4:
+                    print(f"Current step is {defaults[0]}, current angle is {defaults[1]}, current step is {defaults[2]} and current tckedit number is {defaults[4]}.")
+                param_1 = input('Type in the step:  ')
+                param_2 = input('Type in the angle:  ')
+                param_3 = input('Type in the cutoff:  ')
+                param_4 = input('Type in the tckedit number if applicable, if not type in 0:  ')
+                defaults = [param_1, param_2, param_3, param_4]
+
 
         convert_tracts(file_paths['t1_mif'], 'debug')
         step += 1
