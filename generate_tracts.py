@@ -3,6 +3,8 @@ from functions import run
 
 current_dir = os.getcwd()
 
+"""CHANGE FA (NOT EVERYTIME)"""
+
 
 def gentck():
     """Present tractography options and execute chosen operation."""
@@ -68,107 +70,204 @@ def display_tract(tract_path):
 def process_af():
     """Generate AF tracts."""
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/AF_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-AF_{side}.tck"
-            print(f"Generating AF tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/SLF_{side}.mif -include {current_dir}/mrtrix3_files/rois/BROCA_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            exclude_file = f"{current_dir}/mrtrix3_files/rois/AF_exclude.mif"
-            if os.path.isfile(exclude_file):
-                run(f"tckedit {output_file} {output_file.replace('.tck', '-EX.tck')} -exclude {exclude_file}")
-            filepaths.append(output_file)
+    sides = ["L", "R"]
+    defaults = ["1.75", "45", "0.05", "1000"]
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/SLF_{sides[1]}.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-AF_{sides[0]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {current_dir}/mrtrix3_files/rois/AF_{sides[0]}.mif -include {current_dir}/mrtrix3_files/rois/SLF_{sides[0]}.mif -include {current_dir}/mrtrix3_files/rois/BROCA_{sides[0]}.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        cmd_2 = f"tckedit {output_file} {current_dir}/mrtrix3_files/tracts/mrtrix3-AF-EX.tck -exclude {current_dir}/mrtrix3_files/rois/AF_exclude.mif"
+        cmd_3 = f"tckedit {output_file} {current_dir}/mrtrix3_files/tracts/mrtrix3-AF-EX_{defaults[3]}.tck -exclude {current_dir}/mrtrix3_files/rois/AF_exclude.mif -number {defaults[3]}"
+        run(cmd)
+        run(cmd_2)
+        run(cmd_3)
+        filepaths.append(output_file)
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/SLF_{sides[0]}.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-AF_{sides[1]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {current_dir}/mrtrix3_files/rois/AF_{sides[1]}.mif -include {current_dir}/mrtrix3_files/rois/SLF_{sides[1]}.mif -include {current_dir}/mrtrix3_files/rois/BROCA_{sides[1]}.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        cmd_2 = f"tckedit {output_file} {current_dir}/mrtrix3_files/tracts/mrtrix3-AF-EX.tck -exclude {current_dir}/mrtrix3_files/rois/AF_exclude.mif"
+        cmd_3 = f"tckedit {output_file} {current_dir}/mrtrix3_files/tracts/mrtrix3-AF-EX_{defaults[3]}.tck -exclude {current_dir}/mrtrix3_files/rois/AF_exclude.mif -number {defaults[3]}"
+        run(cmd)
+        run(cmd_2)
+        run(cmd_3)
+        filepaths.append(output_file)
     return filepaths
 
 def process_mha():
     """Generate MHA tracts."""
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/MHA_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MHA_{side}.tck"
-            print(f"Generating MHA tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/M1_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+    sides = ["L", "R"]
+    defaults = ["1", "45", "0.1"]
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[1]}_Ped.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MHA_{sides[1]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -include {current_dir}/mrtrix3_files/rois/{sides[1]}_Ped.mif -seed_image {current_dir}/mrtrix3_files/rois/{sides[0]}HandM1.mif -include {current_dir}/mrtrix3_files/rois/{sides[1]}_Cap.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        run(cmd)
+        filepaths.append(output_file)
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[0]}_Ped.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MHA_{sides[0]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -include {current_dir}/mrtrix3_files/rois/{sides[0]}_Ped.mif -seed_image {current_dir}/mrtrix3_files/rois/{sides[1]}HandM1.mif -include {current_dir}/mrtrix3_files/rois/{sides[0]}_Cap.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        run(cmd)
+        filepaths.append(output_file)
     return filepaths
+
 
 def process_sha():
     """Generate SHA tracts."""
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/SHA_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-SHA_{side}.tck"
-            print(f"Generating SHA tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/S1_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+    sides = ["L", "R"]
+    defaults = ["1", "45", "0.1"]
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/SHA_{sides[1]}.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MHA_{sides[1]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {current_dir}/mrtrix3_files/rois/{sides[1]}HandS1.mif -include {current_dir}/mrtrix3_files/rois/{sides[0]}_Thal.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        run(cmd)
+        filepaths.append(output_file)
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/SHA_{sides[0]}.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MHA_{sides[0]}.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {current_dir}/mrtrix3_files/rois/{sides[0]}HandS1.mif -include {current_dir}/mrtrix3_files/rois/{sides[1]}_Thal.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]}"
+        run(cmd)
+        filepaths.append(output_file)
     return filepaths
 
 def process_lip_motor():
     """Generate Lip Motor tracts."""
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/LipMotor_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-LipMotor_{side}.tck"
-            print(f"Generating Lip Motor tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/PreMotor_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+    sides = ["L", "R"]
+    defaults = ["1", "45", "0.1", "1000"]
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[0]}-Ped.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[1]}_Lip.tck"
+        output_edit_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[1]}_Lip_1000.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -include {current_dir}/mrtrix3_files/rois/{sides[0]}-Ped.mif -seed_image {current_dir}/mrtrix3_files/rois/LipM1.mif -include {current_dir}/mrtrix3_files/rois/{sides[0]}-Cap.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional -force"
+        cmd_2 = f"tckedit {output_file} {output_edit_file} -number {defaults[3]}"
+        run(cmd)
+        run(cmd_2)
+        filepaths.append(output_file)
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[1]}-Ped.mif"):
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[0]}_Lip.tck"
+        output_edit_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[0]}_Lip_1000.tck"
+        cmd = f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -include {current_dir}/mrtrix3_files/rois/{sides[1]}-Ped.mif -seed_image {current_dir}/mrtrix3_files/rois/LipM1.mif -include {current_dir}/mrtrix3_files/rois/{sides[1]}-Cap.mif -step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional -force"
+        cmd_2 = f"tckedit {output_file} {output_edit_file} -number {defaults[3]}"
+        run(cmd)
+        run(cmd_2)
+        filepaths.append(output_file)
+
+
     return filepaths
+
 
 def process_optic_radiation():
-    """Generate Optic Radiation tracts."""
+    """Generate Optic Radiation tracts (OR_UNI) for both sides."""
+    sides = ["L", "R"]
+    defaults = ["1", "45", "0.1"]
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/OpticRad_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-OpticRad_{side}.tck"
-            print(f"Generating Optic Radiation tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/LGN_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[0]}_LGN.mif"):
+        print("Drawing on LEFT side")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[0]}-OR_UNI.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[0]}_LGN.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{sides[0]}-latCalc.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{sides[0]}-latVentr.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional"
+        )
+        run(cmd)
+        filepaths.append(output_file)
+
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[1]}_LGN.mif"):
+        print("Drawing on RIGHT side")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{sides[1]}-OR_UNI.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[1]}_LGN.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{sides[1]}-latCalc.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{sides[1]}-latVentr.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional"
+        )
+        run(cmd)
+        filepaths.append(output_file)
     return filepaths
+
 
 def process_motor_foot():
-    """Generate Motor Foot tracts."""
+    """Generate foot motor area tracts for both sides."""
+    sides = ["R", "L"]
+    file_suffixes = ["RF_MFO", "LF_MFO"]
+    ped_suffixes = ["L_Ped", "R_Ped"]
+    cap_suffixes = ["L_Cap", "R_Cap"]
+    defaults = ["1", "45", "0.1", "1000"]
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/MFoot_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MFoot_{side}.tck"
-            print(f"Generating Motor Foot tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/LegMotor_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+
+    # Process Right Foot Motor Area
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[0]}FootM1.mif"):
+        print("Making Right foot motor area tracts")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[0]}.tck"
+        output_edit_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[0]}_{defaults[3]}.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[0]}FootM1.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{ped_suffixes[0]}.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{cap_suffixes[0]}.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional -force"
+        )
+        edit_cmd = f"tckedit {output_file} {output_edit_file} -number {defaults[3]}"
+        run(cmd)
+        run(edit_cmd)
+        filepaths.append(output_file)
+
+    # Process Left Foot Motor Area
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[1]}FootM1.mif"):
+        print("Making Left foot motor area tracts")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[1]}.tck"
+        output_edit_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[1]}_{defaults[3]}.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[1]}FootM1.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{ped_suffixes[1]}.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{cap_suffixes[1]}.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -seed_unidirectional -force"
+        )
+        edit_cmd = f"tckedit {output_file} {output_edit_file} -number {defaults[3]}"
+        run(cmd)
+        run(edit_cmd)
+        filepaths.append(output_file)
+
     return filepaths
 
+
 def process_motor_face():
-    """Generate Motor Face tracts."""
+    """Generate face motor area tracts for both sides."""
+    sides = ["R", "L"]
+    file_suffixes = ["R_MFace", "L_MFace"]
+    ped_suffixes = ["L_Ped", "R_Ped"]
+    cap_suffixes = ["L_Cap", "R_Cap"]
+    defaults = ["1", "45", "0.05"]
     filepaths = []
-    for side in ["L", "R"]:
-        roi_file = f"{current_dir}/mrtrix3_files/rois/MFace_{side}.mif"
-        if os.path.isfile(roi_file):
-            output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-MFace_{side}.tck"
-            print(f"Generating Motor Face tracts for {side} hemisphere...")
-            run(
-                f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} -seed_image {roi_file} "
-                f"-include {current_dir}/mrtrix3_files/rois/FaceMotor_{side}.mif -step 1.75 -angle 45 -cutoff 0.05"
-            )
-            filepaths.append(output_file)
+
+    # Process Right Face Motor Area
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[0]}FaceM1.mif"):
+        print("Making Right Face Motor Area")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[0]}.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[0]}FaceM1.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{ped_suffixes[0]}.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{cap_suffixes[0]}.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -force"
+        )
+        run(cmd)
+        filepaths.append(output_file)
+
+    # Process Left Face Motor Area
+    if os.path.isfile(f"{current_dir}/mrtrix3_files/rois/{sides[1]}FaceM1.mif"):
+        print("Making Left Face Motor Area")
+        output_file = f"{current_dir}/mrtrix3_files/tracts/mrtrix3-{file_suffixes[1]}.tck"
+        cmd = (
+            f"tckgen {current_dir}/mrtrix3_files/fods/wm_fod.mif {output_file} "
+            f"-seed_image {current_dir}/mrtrix3_files/rois/{sides[1]}FaceM1.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{ped_suffixes[1]}.mif "
+            f"-include {current_dir}/mrtrix3_files/rois/{cap_suffixes[1]}.mif "
+            f"-step {defaults[0]} -angle {defaults[1]} -cutoff {defaults[2]} -force"
+        )
+        run(cmd)
+        filepaths.append(output_file)
+
     return filepaths
