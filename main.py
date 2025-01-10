@@ -108,7 +108,7 @@ def main():
 
     if step == 2 and cont.lower() == 'y':
         # Convert T1 file
-        for i in get_full_file_names(struct_data_dir):
+        for i in get_full_file_names(diff_data_dir):
             if 't1' in i.lower() and 'dis3d' in i.lower():
                 t1_file = get_full_file_names(i)[0]
                 shutil.copy(t1_file, file_paths['template_file'])
