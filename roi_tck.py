@@ -36,8 +36,6 @@ tck_list = [
     "mrtrix3-AF_EX.tck",
     "mrtrix3-MHA_R.tck",
     "mrtrix3-MHA_L.tck",
-    "mrtrix3-MHA_R.tck",
-    "mrtrix3-MHA_L.tck",
     "mrtrix3_R_Lip.tck",
     "mrtrix3_L_Lip.tck",
     "mrtrix3_L_OR_UNI.tck",
