@@ -88,7 +88,7 @@ def main():
     }
 
     # Ensure output directories exist
-    # check_and_handle_directories(file_paths["output_dirs"])
+    check_and_handle_directories(file_paths["output_dirs"])
 
     b0s_check = get_full_file_names(f"{os.getcwd()}/mrtrix3_files/converted")
     if len(b0s_check) != 0:
