@@ -102,6 +102,7 @@ def main():
         # Convert diffusion files to .mif and categorize by type
         for i in get_full_file_names(diff_data_dir):
             if 'ep2d' in i.lower() and 'fa' not in i.lower():
+                print('Hello', i)
                 convert = f"{os.getcwd()}/mrtrix3_files/converted/{os.path.basename(i)}.mif"
                 result_cmd = f"mrconvert {i} {convert}"
                 run(result_cmd)
