@@ -3,6 +3,20 @@ from functions import run
 
 current_dir = os.getcwd()
 
+
+def cmd_check(cmd):
+    print('-----------')
+    print('Command is:')
+    print(cmd)
+    print()
+    check = input('Do you need to edit this command?  (y/n)')
+    if check.lower() != 'y':
+        run(cmd)
+    else:
+        new_cmd = input('Please type in the command you want to run:')
+        cmd_check(new_cmd)
+
+
 def gentck(defaults, choice):
     """Present tractography options and execute chosen operation."""
     print("\nTractography Options:")
@@ -15,8 +29,9 @@ def gentck(defaults, choice):
             "4": "Lip Motor Tract",
             "7": "Optic Radiation",
             "9": "MFO: Motor Foot Area",
-            "F": "MFace: Motor Face Area",
-            "S": "Skip",
+            "f": "MFace: Motor Face Area",
+            "c": "Custom",
+            "s": "Skip",
         }
         for key, desc in tract_options.items():
             print(f"({key}) {desc}")
@@ -49,6 +64,9 @@ def gentck(defaults, choice):
     elif choice == "F":
         print("You chose MFace (Motor Face Area)")
         filepaths, defaults = process_motor_face(defaults)
+    elif choice in ["C", "c"]:
+        print("You chose a custom tract with custom commands")
+        filepaths, defaults = process_custom()
     elif choice == "S":
         print("Skipping tract generation.")
         return [], defaults  # Explicitly return an empty list and defaults
@@ -303,3 +321,18 @@ def process_motor_face(defaults):
         filepaths.append(output_file)
 
     return filepaths, defaults
+
+
+def process_custom():
+    finished = False
+    print('---------------------------')
+    print('Preparing for custom tracts')
+    while finished is False:
+        cmd = input('Please type the command you want to run:  ')
+        run(cmd)
+        a = cmd.split(' ')
+        tract_output = [element for element in a if '.tck' in element]
+        check = input('Would you like to run another command?:  ')
+        if check == 'n':
+            finished = True
+    return tract_output, None
