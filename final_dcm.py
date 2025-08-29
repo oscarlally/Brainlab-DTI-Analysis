@@ -4,7 +4,6 @@ import numpy as np
 import pydicom
 import random
 import string
-import os
 
 
 def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):

@@ -1,12 +1,6 @@
-from functions import run, norm_nii, skew, mirror_nifti, get_full_file_names, copy_directory
-from final_dcm import create_brainlab_object
-from functions import get_full_file_names
-from tkinter import filedialog
-import nibabel as nib
-import numpy as np
+from functions import run
 import subprocess
 import signal
-import pydicom
 import os
 
 
