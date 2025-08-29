@@ -58,10 +58,7 @@ def check_dependencies(dependencies):
 
 def find_dir(pid, base_dir):
     x = 0
-    # normalize base_dir to avoid path mismatches
-
     for root, subdirs, files in os.walk(base_dir):
-        # Skip the base_dir itself
         if os.path.abspath(root) == f"{os.getcwd()}/mrtrix3_files/":
             continue
         for d in subdirs:
