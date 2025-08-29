@@ -1,0 +1,16 @@
+PLEASE CHANGE THE PART OF THESE COMMANDS TO MATCH YOUR DIRECTORIES,
+E.G. THIS PART /Users/oscarlally/Documents/Github/
+
+PLEASE ALSO ADD ANY COMMANDS YOU USE TO HELP AID THE DEVELOPMENT OF THIS SOFTWARE
+
+L_MFO.tck command
+tckgen /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/fods/wm_fod.mif /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/tracts/L_MFO.tck -seed_image /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/R_Foot.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/L_Ped.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/L_Cap.mif -step 1.75 -angle 45 -cutoff 0.05 -force
+
+AF.tck command
+tckgen /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/fods/wm_fod.mif /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/tracts/AF.tck -seed_image /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/AF.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/SLF.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/Broca.mif -step 1.75 -angle 45 -cutoff 0.05 -force
+
+R_Hand command
+tckgen /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/fods/wm_fod.mif /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/tracts/R_Hand.tck -seed_image /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/L_Hand_M1.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/R_Ped.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/R_Cap.mif -step 1.75 -angle 45 -cutoff 0.05 -force
+
+OR command
+tckgen /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/fods/wm_fod.mif /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/tracts/OR.tck -seed_image /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/LGN.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/L_Calc.mif -include /Users/oscarlally/Documents/Github/Brainlab-DTI-Analysis/mrtrix3_files/rois/LatVentr.mif -step 1.75 -angle 45 -cutoff 0.05 -seed unidirectional -force

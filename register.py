@@ -54,23 +54,34 @@ def find_app(application, dir_1, dir_2, timeout_duration=5):
               "Please move it to either of these directories")
 
 
-def run_fsl(cmd):
-    base_dir = os.getcwd()
-    home_dir = os.path.expanduser("~")
-    functions_path = find_app('fsl', '/usr/local/', home_dir)
-    functions_path = f"{functions_path}/bin"
-    os.chdir(functions_path)
-    if 'extracted_b0' in cmd:
-        output_file = 'extracted_b0.txt'
+def run_fsl(cmd, dependencies):
+    if dependencies['fsl']:
+        if 'extracted_b0' in cmd:
+            output_file = 'extracted_b0.txt'
+        else:
+            output_file = 'object.txt'
+        output_dir = f"./mrtrix3_files/misc/"
+        with open(f"{output_dir}{output_file}", 'w') as f:
+            process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
+        with open(f"{output_dir}{output_file}", 'r') as f:
+            output = f.read()
     else:
-        output_file = 'object.txt'
-    output_dir = f"{base_dir}/mrtrix3_files/misc/"
-    current_dir = os.getcwd()
-    with open(f"{output_dir}{output_file}", 'w') as f:
-        process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
-    with open(f"{output_dir}{output_file}", 'r') as f:
-        output = f.read()
-    os.chdir(base_dir)
+        base_dir = os.getcwd()
+        home_dir = os.path.expanduser("~")
+        functions_path = find_app('fsl', '/usr/local/', home_dir)
+        functions_path = f"{functions_path}/bin"
+        os.chdir(functions_path)
+        if 'extracted_b0' in cmd:
+            output_file = 'extracted_b0.txt'
+        else:
+            output_file = 'object.txt'
+        output_dir = f"{base_dir}/mrtrix3_files/misc/"
+        current_dir = os.getcwd()
+        with open(f"{output_dir}{output_file}", 'w') as f:
+            process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
+        with open(f"{output_dir}{output_file}", 'r') as f:
+            output = f.read()
+        os.chdir(base_dir)
 
 
 def zero_test(file_1, file_2):
@@ -101,32 +112,36 @@ def change_thresh(nii_dir, object_name, thresh, debug):
     return thresholded_obj
 
 
-def actual_registration(debug):
+def actual_registration(debug, dependencies):
 
     nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
     misc_dir = f"{current_dir}/mrtrix3_files/misc/"
     b0_extract_nii = f"{nii_dir}extracted_b0.nii"
-    t1_bet_nii = f"{nii_dir}t1_bet_mask.nii.gz"
+    nii_files = os.listdir(nii_dir)
+    for i in nii_files:
+        if 'bet' in i:
+            t1_bet_nii = f"{nii_dir}{i}"
 
     print()
-    print('Please choose the tract that you would like to register')
+    paths_to_convert = [p for p in os.listdir(nii_dir) if 'NORM' in p]
+    print('Available tracts to register are are:')
+    for idx, i in enumerate(paths_to_convert):
+        print(f"{idx + 1}. {i}")
+    print()
+    select = input("Please type in the number of the tract you would like to register:  ")
+    tract_to_reg = paths_to_convert[int(select) - 1]
 
-    file_paths = filedialog.askopenfilenames(title='Select tract to register',
-                                             filetypes=[('Nii Files', '*.nii'), ('All files', '*.*')],
-                                             initialdir=nii_dir)
-
-    object_nii = list(file_paths)[0]
-    print(object_nii)
+    object_nii = f"{nii_dir}{tract_to_reg}"
     object_pre_name = object_nii.split('/')[-1]
-    object_name = object_pre_name.split('.')[0][8:]
+    object_name = object_pre_name.split('.')[0]
 
     registered_object = f"{nii_dir}{object_name}_registered.nii.gz"
 
     fslhd_cmd_1 = f"fslhd {b0_extract_nii}"
     fslhd_cmd_2 = f"fslhd {object_nii}"
 
-    run_fsl(fslhd_cmd_1)
-    run_fsl(fslhd_cmd_2)
+    run_fsl(fslhd_cmd_1, dependencies)
+    run_fsl(fslhd_cmd_2, dependencies)
 
     identical = zero_test(f"{misc_dir}extracted_b0.txt", f"{misc_dir}object.txt")
 
@@ -146,6 +161,9 @@ def actual_registration(debug):
             print()
 
             thresh = input('Please type in the threshold value that you want to try: ')
+            print()
+            print('NB: If you are changing the threshold via fsleyes and you want to save that threshold, \n'
+                  'then please save the thresholded tract in the mrtrix3_files/nifti directory.')
 
             thresholded = change_thresh(nii_dir, object_name, thresh, debug)
 
@@ -165,112 +183,21 @@ def actual_registration(debug):
 
     if identical == 0:
 
-        return 0, thresholded
+        print()
+        cont = input('Continue? (y/n): ')
+
+        return 0, cont, thresholded
 
     else:
 
-        return 1, thresholded
-
-
-def registration(template_file, t1_nii, diff_data_dir, debug):
-    tracts = get_full_file_names(f"{current_dir}/mrtrix3_files/tracts")
-
-    nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
-    overlay_dir = f"{current_dir}/mrtrix3_files/overlays/"
-    final_dir = f"{current_dir}/mrtrix3_files/volumes/"
-
-    binarised_object = f"{overlay_dir}binarised_object.nii.gz"
-    t1_object = f"{overlay_dir}t1_object.nii.gz"
-    t1_hole = f"{overlay_dir}t1_hole.nii.gz"
-    binarised_skew = f"{overlay_dir}binary_skew.nii.gz"
-    t1_dicom_range = f"{overlay_dir}t1_dicom_range.nii.gz"
-    object_dicom_range = f"{overlay_dir}object_dicom_range.nii.gz"
-    t1_burned = f"{overlay_dir}t1_burned.nii.gz"
-    t1_burned_final = f"{overlay_dir}t1_burned_final.nii.gz"
-
-    relevant_dcm = pydicom.dcmread(template_file)
-    data_dicom = relevant_dcm.pixel_array
-    pixel_values_dicom = data_dicom.flatten()
-    max_value = max(pixel_values_dicom)
-
-    print()
-
-
-    while True:
-
-        correct_trans, registered = actual_registration(debug)
-
-        pre_name = registered.split('/')[-1]
-        tract_name = pre_name.split('.')[0][8:]
-
-        norm_nii(registered, binarised_object, 0, 1)
-        modified_file = skew(binarised_object, 10)
-        nib.save(modified_file, f"{binarised_skew}")
-
-        mult_cmd = f"fslmaths {t1_nii} -mul {binarised_object} {t1_object}"
-        sub_cmd = f"fslmaths {t1_nii} -sub {t1_object} {t1_hole}"
-
-        run(mult_cmd)
-        run(sub_cmd)
-
-        nifti_file = nib.load(f"{t1_hole}")
-        nii_data = nifti_file.get_fdata()
-        max_hole = np.max(nii_data)
-        norm_num = 60 / max_hole
-
-        mult_2_cmd = f"fslmaths {t1_hole} -mul {norm_num} {t1_dicom_range}"
-        mult_3_cmd = f"fslmaths {binarised_skew} -mul {max_value - 60} {object_dicom_range}"
-        add_cmd = f"fslmaths {t1_dicom_range} -add {object_dicom_range} {t1_burned}"
-
-        run(mult_2_cmd)
-        run(mult_3_cmd)
-        run(add_cmd)
-
-        mirror_nifti(t1_burned, t1_burned_final)
-        brainlab_name_pre_pre = registered.split('/')
-        brainlab_name_pre = brainlab_name_pre_pre[-1].split('_')
-        brainlab_name = "" + brainlab_name_pre[0] + brainlab_name_pre[1]
-
-        object_path = f"{final_dir}Brainlab_Object_{brainlab_name}.dcm"
-
-        while True:
-            print()
-            print(
-                "Dicom creation.  Open the resultant dicom in the volumes and play around with the parameters as necessary.")
-            print()
-            wind_factor = input('Type in the maximum factor (default = 0.5): ')
-            print()
-            max_factor = input('Type in the window factor (default = 0.66): ')
-            print()
-            create_brainlab_object(tract_name, t1_burned_final, template_file, object_path, float(max_factor),
-                                   float(wind_factor))
-            print()
-            print('Please now open the dcm (in the volumes folder) and t1_burned.nii (nifti folder).')
-            check = input('Is the dicom file flipped? (y/n):  ')
-            if check == 'y':
-                create_brainlab_object(tract_name, t1_burned, template_file, object_path, float(max_factor),
-                                       float(wind_factor))
-            print()
-            happy = input('Is the dicom contrast sufficient? (y/n): ')
-            print()
-
-            if happy.lower() == 'y':
-                copy_directory(os.getcwd(), f"{diff_data_dir}/Processed")
-                break
-
         print()
+        cont = input('Continue? (y/n): ')
 
-        happy_overall = input('Do you want to register another object? (y/n): ')
+        return 1, cont, thresholded
 
-        if happy.lower() == 'n':
-            break
 
-'''Incase of needing to start at this point, here is the code'''
+def registration(debug, dependencies):
 
-# pt_dir = '/Users/oscarlally/Desktop/CCL/170087944/raw/'
-# template_file = ['/Users/oscarlally/Desktop/CCL/170087944/raw/T1_POST/QUETTI_Luisa__M.MR.fMRI_v1_(old)_L.45.1.2024.07.03.11.44.06.595.47222652.dcm']
-# tract_name = 'OR'
-# debug = 'y'
-# tract = '/Users/oscarlally/Desktop/CCL/170087944/raw/Processed/10_tract/mrtrix-OR_registered_threshold.nii.gz'
-# from registration import registration
-# registration(pt_dir, template_file, tract_name, debug, tract)
+    correct_trans, cont, registered = actual_registration(debug, dependencies)
+
+    return correct_trans, cont, registered

@@ -13,11 +13,45 @@ import numpy as np
 import nibabel as nib
 import subprocess
 import signal
-import shutil
 import re
-from tkinter import ttk
-import tkinter as tk
-import pydicom
+import time
+
+
+def check_dependencies(dependencies):
+
+    try:
+        # Run 'which' for the given command
+        result = subprocess.run(
+            ["which", 'mrcat'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        filepath = result.stdout.strip()
+
+        if filepath:
+            print('✅ The dependency mrtrix3 was found on system path.')
+            dependencies['mrtrix3'] = True
+
+    except subprocess.CalledProcessError:
+        print("❌ Error finding mrtrix on system path. The code will attempt to run regardless, but this could cause issues")
+
+    try:
+        # Run 'which' for the given command
+        result = subprocess.run(
+            ["which", 'flirt'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        filepath = result.stdout.strip()
+
+        if filepath:
+            print('✅ The dependency fsl was found on system path.')
+            dependencies['fsl'] = True
+
+    except subprocess.CalledProcessError:
+        print(f"❌ Error finding fsl on system path. The code will attempt to run regardless, but this could cause issues")
 
 
 def find_dir(pid, base_dir):
@@ -34,6 +68,9 @@ def find_dir(pid, base_dir):
 
 
 def check_and_handle_directories(dir_list):
+    temp_root = 'mrtrix3_files/temp'
+    os.makedirs(temp_root, exist_ok=True)
+
     for directory in dir_list:
         if not os.path.exists(directory):
             # Create directory if it doesn't exist
@@ -41,12 +78,18 @@ def check_and_handle_directories(dir_list):
             os.makedirs(directory)
         else:
             # Directory exists
-            if os.listdir(directory):
+            if os.listdir(directory) and directory != temp_root:
                 # Directory is not empty
                 print(f"The directory '{directory}' exists and is not empty.")
                 while True:
                     choice = input(f"Do you want to delete its contents and recreate it? (y/n): ").lower()
                     if choice == 'y':
+                        # Backup before deletion
+                        timestamp = time.strftime("%Y%m%d-%H%M%S")
+                        backup_dir = os.path.join(temp_root, f"{os.path.basename(directory)}_{timestamp}")
+                        print(f"Backing up '{directory}' to '{backup_dir}'...")
+                        shutil.copytree(directory, backup_dir)
+
                         # Delete and recreate the directory
                         print(f"Deleting contents of {directory} and recreating it.")
                         shutil.rmtree(directory)
@@ -59,7 +102,6 @@ def check_and_handle_directories(dir_list):
                         print("Invalid input. Please enter 'y' or 'n'.")
             else:
                 print(f"The directory '{directory}' exists and is empty.")
-
 
 
 def get_full_file_names(directory_path):
@@ -125,14 +167,115 @@ def find_app(application, dir_1, dir_2, timeout_duration=5):
             "The application is not in your user directory or your local directory. Please move it to either of these directories")
 
 
-def run(cmd):
+def run_unknown(cmd):
+    # Initialise memory once
+    if not hasattr(run_unknown, "dependency_paths"):
+        run_unknown.dependency_paths = {'mrtrix': False, 'fsl': False}
+        run_unknown.dependency_commands = {'mrtrix': False, 'fsl': False}
+
+        home_dir = os.path.expanduser("~")
+
+        if not run_unknown.dependency_paths['mrtrix']:
+            run_unknown.dependency_paths['mrtrix'] = f"{find_app('mrtrix3', '/usr/local/', home_dir)}/bin"
+        if not run_unknown.dependency_paths['fsl']:
+            run_unknown.dependency_paths['fsl'] = f"{find_app('fsl', '/usr/local/', home_dir)}/bin"
+
+        if not run_unknown.dependency_commands['mrtrix']:
+            run_unknown.dependency_commands['mrtrix'] = os.listdir(run_unknown.dependency_paths['mrtrix'])
+        if not run_unknown.dependency_commands['fsl']:
+            run_unknown.dependency_commands['fsl'] = os.listdir(run_unknown.dependency_paths['fsl'])
+
     current_dir = os.getcwd()
-    home_dir = os.path.expanduser("~")
-    functions_path = find_app('mrtrix3', '/usr/local/', home_dir)
-    functions_path = f"{functions_path}/bin"
-    os.chdir(functions_path)
+    cmd_name = cmd.split()[0].strip()
+
+    # Switch directory based on command
+    if cmd_name in run_unknown.dependency_commands['mrtrix']:
+        os.chdir(run_unknown.dependency_paths['mrtrix'])
+    elif cmd_name in run_unknown.dependency_commands['fsl']:
+        os.chdir(run_unknown.dependency_paths['fsl'])
+
+    # Run process
     process = subprocess.run(cmd.split())
+
+    # Restore working dir
     os.chdir(current_dir)
+
+    return process
+
+
+def run(*args):
+    process = subprocess.run(args[0].split())
+
+
+def register_pre_images(diff_data_dir, file_paths):
+
+    for i in get_full_file_names(diff_data_dir):
+        if 't1' in i.lower() and 'post' not in i.lower():
+            t1_file = get_full_file_names(i)[0]
+            shutil.copy(t1_file, file_paths['template_file_t1'])
+            run(f"mrconvert {t1_file} {file_paths['t1_mif']} -force")
+            run(f"mrconvert -strides -1,2,3 {t1_file} {file_paths['t1_nii']}")
+        if 't1' in i.lower() and 'post' in i.lower():
+            t1_post_file = get_full_file_names(i)[0]
+            shutil.copy(t1_post_file, file_paths['template_file_t1_post'])
+            run(f"mrconvert {t1_post_file} {file_paths['t1_post_mif']} -force")
+            run(f"mrconvert -strides -1,2,3 {t1_post_file} {file_paths['t1_post_nii']}")
+        if 'dark' in i.lower():
+            flair_file = f"{get_full_file_names(i)[0]}"
+            shutil.copy(flair_file, file_paths['template_file_flair'])
+            run(f"mrconvert -strides -1,2,3 {flair_file} {file_paths['flair_file_nii']}")
+        if 't2' in i.lower() and 'dark' not in i.lower():
+            t2_file = f"{get_full_file_names(i)[0]}"
+            shutil.copy(t2_file, file_paths['template_file_t2'])
+            run(f"mrconvert -strides -1,2,3 {t2_file} {file_paths['t2_file_nii']}")
+
+    display_reg_files = [file_paths['t1_post_nii'], file_paths['t1_nii'], file_paths['flair_file_nii'], file_paths['t2_file_nii']]
+    display_reg_check = [os.path.isfile(x) for x in display_reg_files]
+    register_to = None
+
+    "Register the files to one of the t1 images, preferentially the post."
+    if display_reg_check[0]:
+        register_to = display_reg_files[0]
+        shutil.copy(file_paths['template_file_t1_post'], file_paths['template_file'])
+    else:
+        register_to = display_reg_files[1]
+        shutil.copy(file_paths['template_file_t1'], file_paths['template_file'])
+    if display_reg_check[2]:
+        shutil.copy(file_paths['template_file_flair'], file_paths['alt_template_file'])
+    else:
+        shutil.copy(file_paths['template_file_t2'], file_paths['alt_template_file'])
+
+
+
+    "Remove the file we are registering to and their status as a filepath"
+    rem_index = display_reg_files.index(register_to)
+    display_reg_files.remove(register_to)
+    display_reg_check.pop(rem_index)
+    for reg_path, isfile in zip(display_reg_files, display_reg_check):
+        if 'flair' in reg_path and isfile:
+            flirt_cmd = f"flirt -in {reg_path} \
+            -ref {register_to} \
+            -omat {file_paths['flirt_transform']} \
+            -out {file_paths['reg_flair_file']}"
+            run(flirt_cmd)
+        if 'post' in reg_path and isfile:
+            flirt_cmd = f"flirt -in {reg_path} \
+            -ref {register_to} \
+            -omat {file_paths['t1_transform']} \
+            -out {file_paths['reg_t1_post_file']}"
+            run(flirt_cmd)
+        if 't1' in reg_path and isfile and 'post' not in reg_path:
+            flirt_cmd = f"flirt -in {reg_path} \
+            -ref {register_to} \
+            -omat {file_paths['t1_transform']} \
+            -out {file_paths['reg_t1_file']}"
+            run(flirt_cmd)
+        if 't2' in reg_path and isfile:
+            flirt_cmd = f"flirt -in {reg_path} \
+            -ref {register_to} \
+            -omat {file_paths['t1_transform']} \
+            -out {file_paths['reg_t2_file']}"
+            run(flirt_cmd)
 
 
 def get_counts(tck_image):
@@ -155,7 +298,7 @@ def get_counts(tck_image):
     return int(number)
 
 
-def convert_tracts(t1_mif, debug):
+def convert_tracts(t1_nii, debug):
     current_dir = os.getcwd()
     nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
     tract_dir = f"{current_dir}/mrtrix3_files/tracts/"
@@ -171,15 +314,15 @@ def convert_tracts(t1_mif, debug):
         mif_file = f"{tract_dir}{i.split('.')[0]}.mif"
         tck_file = f"{tract_dir}{i.split('.')[0]}.tck"
         norm_file = f"{tract_dir}{i.split('.')[0]}_NORM.mif"
-        tck_to_mif = f"tckmap -template {fa_tensor} {tck_file} {mif_file}"
+        tck_to_mif = f"tckmap -template {fa_tensor} {tck_file} {mif_file} -force"
         run(tck_to_mif)
         N_tracts = get_counts(f"{tract_dir}{i}")
-        run(f"mrcalc {mif_file} {N_tracts} -div {norm_file}")
+        run(f"mrcalc {mif_file} {N_tracts} -div {norm_file} -force")
         if debug == 'debug':
-            mrview_cmd = f"mrview -mode 2 -load {t1_mif} -interpolation 0 -overlay.load {norm_file} -comments 0"
+            mrview_cmd = f"mrview -mode 2 -load {t1_nii} -interpolation 0 -overlay.load {norm_file} -comments 0"
             run(mrview_cmd)
         norm_nii_file = f"{nii_dir}{i.split('.')[0]}_NORM.nii"
-        run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2")
+        run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2 -force")
 
     nii_files = os.listdir(nii_dir)
     for i in nii_files:
@@ -397,3 +540,43 @@ def copy_directory(source_dir, destination_dir):
         print(f"Directory copied from {source_dir} to {destination_dir}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
+
+
+def safe_copy(src, dst_dir):
+    """
+    Copies a file into dst_dir.
+    If src and dst resolve to the same path, append _1, _2, etc. until unique.
+    """
+    os.makedirs(dst_dir, exist_ok=True)  # make sure the directory exists
+
+    filename = os.path.basename(src)
+    dst = os.path.join(dst_dir, filename)
+
+    # If destination exists or resolves to same file, generate a new name
+    if os.path.exists(dst):
+        # Only check samefile if dst exists (prevents FileNotFoundError)
+        if os.path.samefile(src, dst):
+            base, ext = os.path.splitext(filename)
+            i = 1
+            while True:
+                new_filename = f"{base}_{i}{ext}"
+                new_dst = os.path.join(dst_dir, new_filename)
+                if not os.path.exists(new_dst):
+                    dst = new_dst
+                    break
+                i += 1
+        else:
+            # dst exists but is not the same file → also rename
+            base, ext = os.path.splitext(filename)
+            i = 1
+            while True:
+                new_filename = f"{base}_{i}{ext}"
+                new_dst = os.path.join(dst_dir, new_filename)
+                if not os.path.exists(new_dst):
+                    dst = new_dst
+                    break
+                i += 1
+
+    shutil.copyfile(src, dst)
+    return dst  # return the final path copied to

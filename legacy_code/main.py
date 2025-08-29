@@ -1,43 +1,39 @@
 import os
+import sys
 import shutil
 import pydicom
 import numpy as np
 import nibabel as nib
 from final_dcm import create_brainlab_object
-from tract_roi_match import roi_table
 from functions import check_and_handle_directories, \
-    get_full_file_names, \
-    register_pre_images, \
-    get_volumes, \
-    create_mask, \
-    find_dir, \
-    safe_copy, \
-    tensor_estimation, \
-    convert_tracts, \
-    copy_directory, \
-    check_dependencies
+                      get_full_file_names, \
+                      delete_files_in_folder, \
+                      run, \
+                      get_volumes, \
+                      create_mask, \
+                      find_dir, \
+                      tensor_estimation, \
+                      convert_tracts, \
+                      copy_directory
+from tract_roi_match import roi_table
+from generate_tracts_original import gentck
 from register import registration
 from intro import intro
-from generate_tracts import run_tract_generation
-from tract_check import tract_selection_check
 from functions import norm_nii, \
-    skew, \
-    mirror_nifti
-
-# Check fsl and mrtrix dependencies
-dependencies = {'mrtrix': False, 'fsl': False}
-
-check_dependencies(dependencies)
-if dependencies['mrtrix'] and dependencies['fsl']:
-    from functions import run
-else:
-    from functions import run_unknown as run
+                      skew, \
+                      mirror_nifti
 
 # Define data directories
-# home_dir = os.path.expanduser("~")
-# pid = input('Please type in the patient number:  ')
-# diff_data_dir = find_dir(pid, home_dir)
-diff_data_dir = "/Users/oscarlally/Desktop/CCL/170119364"
+home_dir = os.path.expanduser("~")
+pid = input('Please type in the patient number:  ')
+diff_data_dir = find_dir(pid, home_dir)
+
+
+# Add the desired path to sys.path
+additional_path = "~/mrtrix3/bin/mrconvert"
+if additional_path not in sys.path:
+    sys.path.append(additional_path)
+
 
 def main():
     intro()
@@ -76,24 +72,9 @@ def main():
         "resid_output": f"{os.getcwd()}/mrtrix3_files/calc/dwi_denoise_residuals.mif",
         "degibbs_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs.mif",
         "template_file": f"{os.getcwd()}/mrtrix3_files/template/template.dcm",
-        "alt_template_file": f"{os.getcwd()}/mrtrix3_files/template/alt_template.dcm",
-        "template_file_t2": f"{os.getcwd()}/mrtrix3_files/template/template_t2.dcm",
-        "template_file_flair": f"{os.getcwd()}/mrtrix3_files/template/template_flair.dcm",
-        "template_file_t1": f"{os.getcwd()}/mrtrix3_files/template/template_t1.dcm",
-        "template_file_t1_post": f"{os.getcwd()}/mrtrix3_files/template/template_t1_post.dcm",
-        "flair_file_nii": f"{os.getcwd()}/mrtrix3_files/nifti/flair.nii",
-        "t2_file_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t2.nii",
-        "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_flair.nii",
-        "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_t2.nii",
-        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_post_t1.nii",
-        "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_t1.nii",
         "t1_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t1.nii",
         "t1_mif": f"{os.getcwd()}/mrtrix3_files/converted/t1.mif",
-        "t1_post_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t1_post.nii",
-        "t1_post_mif": f"{os.getcwd()}/mrtrix3_files/converted/t1_post.mif",
         "degibbs_ap_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_ap.mif",
-        "flirt_transform": f"{os.getcwd()}/mrtrix3_files/misc/flair_to_t1.mat",
-        "t1_transform": f"{os.getcwd()}/mrtrix3_files/misc/t1_to_t1.mat",
         "degibbs_pa_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_pa.mif",
         "degibbs_pair_file": f"{os.getcwd()}/mrtrix3_files/degibbs/degibbs_pair.mif",
         "degibbs_ap_n": f"{os.getcwd()}/mrtrix3_files/degibbs/b0_AP_degibbs_N.mif",
@@ -107,10 +88,9 @@ def main():
         "fa": f"{os.getcwd()}/mrtrix3_files/tensors/fa.mif",
         "ev": f"{os.getcwd()}/mrtrix3_files/tensors/ev.mif",
         "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/tensors/dwi_tensor.mif",
-        "nii_file": '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii',
+        "nii_file": f"{os.getcwd()}/mrtrix3_files/masking/extracted_b0.nii",
         "registered": []
     }
-
 
     # Ensure output directories exist
     # check_and_handle_directories(file_paths["output_dirs"])
@@ -123,8 +103,8 @@ def main():
             if 'b0' in i and 'flipped' not in i:
                 file_paths["b0"] = i
 
-    if int(step) == 1 and cont.lower() == 'y':
-        print(diff_data_dir)
+
+    if step == 1 and cont.lower() == 'y':
         # Convert diffusion files to .mif and categorize by type
         for i in get_full_file_names(diff_data_dir):
             if 'ep2d' in i.lower() and 'fa' not in i.lower():
@@ -141,13 +121,13 @@ def main():
         cont = 'y'
 
     if step == 2 and cont.lower() == 'y':
-        "Create all of the .nii files to be registered"
-        print()
-        print('---------------------')
-        print("Starting registration process due to multiple structural imaging datasets. Please wait...")
-        register_pre_images(diff_data_dir, file_paths)
-        print("Registration process completed successfully.")
-        print()
+        # Convert T1 file
+        for i in get_full_file_names(diff_data_dir):
+            if 't1' in i.lower() and 'dis3d' in i.lower():
+                t1_file = get_full_file_names(i)[0]
+                shutil.copy(t1_file, file_paths['template_file'])
+                run(f"mrconvert {t1_file} {file_paths['t1_mif']}")
+                run(f"mrconvert -strides -1,2,3 {t1_file} {file_paths['t1_nii']} -force")
         step += 1
         cont = 'y'
 
@@ -165,7 +145,6 @@ def main():
             cat_cmd += f"{file_paths['concat_file']}"
             run(cat_cmd)
         else:
-            print("DEBUG concat_file:", file_paths.get('concat_file'))
             shutil.copy2(one_case, file_paths['concat_file'])
         extract_cmd = f"dwiextract {file_paths['concat_file']} {file_paths['b0']} -bzero -force"
         run(extract_cmd)
@@ -173,6 +152,7 @@ def main():
         cont = 'y'
 
     if step == 4 and cont.lower() == 'y':
+
         run(f"mrinfo {file_paths['b0']}")
         run(f"mrinfo {file_paths['b0_rev']}")
 
@@ -199,6 +179,7 @@ def main():
         ap_size_pre = get_volumes(file_paths["b0"])
 
         if ap_size == pa_size == pa_size_pre == ap_size_pre:
+
             print(f"There are {pa_size} volumes in the PA image and there are {ap_size} volumes in the AP image.")
 
         # Concatenate degibbs files
@@ -220,7 +201,6 @@ def main():
     if step == 6 and cont.lower() == 'y':
         # Eddy current corrections
         preproc_cmd = f"dwifslpreproc {file_paths['degibbs_file']} {file_paths['eddy_file']} -rpe_pair -se_epi {file_paths['degibbs_ap_pa_n']} -pe_dir ap -force"
-        print(preproc_cmd)
         run(preproc_cmd)
 
         mrgrid_cmd = f"mrgrid {file_paths['eddy_file']} regrid -voxel 1.3 {file_paths['upsample_out']} -force"
@@ -257,8 +237,7 @@ def main():
         # Masking
         nii_files = []
         create_mask(nii_files, 'debug')
-        file_paths[
-            'nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
+        file_paths['nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
 
         step += 1
         cont = input('Continue? (y/n): ')
@@ -317,45 +296,45 @@ def main():
         step += 1
         cont = input('Continue? (y/n): ')
 
-    if step == 11 and cont.lower() == 'y':
-
-        first_flag = True
-        def create_tract(tract_selection_no, first_flag):
-            while True:
-                tract_path, check = run_tract_generation(tract_selection_no, first_flag, False)
-                if check.lower() == 'y':
-                    return tract_path  # exit cleanly
+        if step == 11 and cont.lower() == 'y':
+            print()
+            print('This step is currently a work in progress. It is recommended to use the custom option, \n'
+                  'and example commands can be found in this code folder, in the file called custom_tracts.txt')
+            print()
+            tract_names = []
+            finished = False
+            defaults = None
+            choice = None
+            while finished is False:
+                tract_name, defaults, choice = gentck(defaults, choice)
+                tract_names.append(tract_name)
+                check = input('Are you happy with the tract (y/n):  ')
+                if check == 'y':
+                    check_two = input('Would you like to create another tract (y/n)?:  ')
+                    if check_two == 'n':
+                        finished = True
                 else:
-                    first_flag = False
+                    print()
+                    if len(defaults) == 3:
+                        print(
+                            f"Current step is {defaults[0]}, current angle is {defaults[1]} and current cutoff is {defaults[2]}.")
+                    if len(defaults) == 4:
+                        print(
+                            f"Current step is {defaults[0]}, current angle is {defaults[1]}, current cutoff is {defaults[2]} and current tckedit number is {defaults[3]}.")
+                    param_1 = input('Type in the step:  ')
+                    param_2 = input('Type in the angle:  ')
+                    param_3 = input('Type in the cutoff:  ')
+                    param_4 = input('Type in the tckedit number if applicable, if not type in 0:  ')
+                    defaults = [param_1, param_2, param_3, param_4]
 
-        tract_names = []
-        while True:
-            tract_selection_no = tract_selection_check('./mrtrix3_files/rois')
-            if tract_selection_no == 's':
-                break
-            tract_path = create_tract(tract_selection_no, first_flag)
-            tract_names.append(tract_path)
-            additional_tract = input('Would you like additional tracts? (y/n): ')
-            if additional_tract.lower() == 'n':
-                break
+
+        convert_tracts(file_paths['t1_mif'], 'debug')
         step += 1
         cont = input('Continue? (y/n): ')
 
     if step == 12 and cont.lower() == 'y':
-        if os.path.isfile(file_paths['reg_t1_file']):
-            convert_tracts(file_paths['t1_post_nii'], 'debug')
-        if os.path.isfile(file_paths['reg_t1_post_file']):
-            convert_tracts(file_paths['t1_nii'], 'debug')
-        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_file']):
-            nii_files = os.listdir('./mrtrix3_files/nifti')
-            t1_nii_file = None
-            for i in nii_files:
-                if 't1' in i:
-                    t1_nii_file = './mrtrix3_files/nifti/' + i
-                    break
-            convert_tracts(t1_nii_file, 'debug')
-
-        _, is_cont, registered = registration('debug', dependencies)
+        convert_tracts(file_paths['t1_mif'], 'debug')
+        _, is_cont, registered = registration('debug')
         file_paths["registered"].append(registered)
         cont = is_cont
         step += 1
@@ -364,47 +343,10 @@ def main():
         print()
         print("Creating objects step")
         print()
+        template_file = file_paths['template_file']
+        t1_nii = file_paths['t1_nii']
 
-        "Select the template file you want to use if more than one is available"
-        template_file = None
-        t2_check = None
-        templates_to_use = os.listdir('./mrtrix3_files/template')
-        for x in templates_to_use:
-            if 'alt' in x:
-                t2_check = True
-        if t2_check:
-            print('----------------------')
-            print('There is both a t2 and a t1 template.  Do you want to use the:')
-            print('1. t1 template')
-            print('2. t2 template')
-            template_check = input('Please input the option you want to use (1/2): ')
-            if template_check == '1':
-                template_file = file_paths['template_file']
-            else:
-                template_file = file_paths['alt_template_file']
-        else:
-            template_file = file_paths['template_file']
-
-
-        "Get the correct .nii file depending on which data you end up having."
         current_dir = os.getcwd()
-        nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
-        print()
-        print()
-        print('-----------------')
-        t1_nii = None
-        if os.path.isfile(file_paths['reg_t1_file']):
-            t1_nii = file_paths['t1_post_nii']
-        if os.path.isfile(file_paths['reg_t1_post_file']):
-            t1_nii = file_paths['t1_nii']
-        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_post_file']):
-            nii_files = os.listdir(nii_dir)
-            for i in nii_files:
-                if 't1' in i and 'bet' not in i:
-                    t1_nii = nii_dir + i
-
-
-        "Work horse of the actual dicom creation"
         nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
         overlay_dir = f"{current_dir}/mrtrix3_files/overlays/"
         final_dir = f"{current_dir}/mrtrix3_files/volumes/"
@@ -413,11 +355,12 @@ def main():
         data_dicom = relevant_dcm.pixel_array
         pixel_values_dicom = data_dicom.flatten()
         max_value = max(pixel_values_dicom)
+        nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
 
         used_indices = set()
 
         while True:
-            paths_to_convert = [p for p in os.listdir(nii_dir) if p.endswith('.nii.gz') and 'mrtrix3' in p]
+            paths_to_convert = [p for p in os.listdir(nii_dir) if p.endswith('.nii.gz')]
             available_indices = [i for i in range(len(paths_to_convert)) if i not in used_indices]
 
             if not available_indices:
@@ -483,7 +426,6 @@ def main():
                 create_brainlab_object(tract_name, t1_burned_final, template_file, object_path, float(max_factor),
                                        float(wind_factor))
 
-                run(f"mrview {object_path}")
                 check = input('Is the dicom file flipped? (y/n): ').strip().lower()
                 if check == 'y':
                     create_brainlab_object(tract_name, t1_burned, template_file, object_path, float(max_factor),
@@ -491,16 +433,8 @@ def main():
 
                 happy = input('Is the dicom contrast sufficient? (y/n): ').strip().lower()
                 if happy == 'y':
-                    dataset = pydicom.dcmread(object_path)
-                    patient_no = dataset.PatientID
-                    if str(patient_no) in diff_data_dir.lower():
-                        if not os.path.isdir(f"{diff_data_dir}/Processed"):
-                            copy_directory(f"{os.getcwd()}/mrtrix3_files", f"{diff_data_dir}/Processed")
-                        else:
-                            safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/mrtrix3_files/volumes")
-                        break  # Done with DICOM tuning
-                    else:
-                        break
+                    copy_directory(f"{os.getcwd()}/mrtrix3_files", f"{diff_data_dir}/Processed")
+                    break  # Done with DICOM tuning
 
             # Ask if user wants to process another
             print()
@@ -511,4 +445,23 @@ def main():
                 break
 
 main()
+            # elif len(file_paths["registered"]) == 1:
+            #     thresh_reg_tract = file_paths["registered"][0]
+            #     tract_name_pre = thresh_reg_tract.split('_NORM_registered')[0]
+            #     tract_name = tract_name_pre.split('/')[-1]
+            # else:
+            #     print()
+            #     print('------')
+            #     print()
+            #     print('Available tracts to convert to dicoms are:')
+            #     for idx, i in enumerate(file_paths["registered"]):
+            #         print(f"{idx+1}. {i}")
+            #     print()
+            #     select = input("Please type in the number of the tract you would like to convert:  ")
+            #     thresh_reg_tract = file_paths["registered"][int(select)-1]
+            #     tract_name_pre = thresh_reg_tract.split('_NORM_registered')[0]
+            #     tract_name = tract_name_pre.split('/')[-1]
+
+
+
 
