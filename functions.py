@@ -58,15 +58,22 @@ def check_dependencies(dependencies):
 
 def find_dir(pid, base_dir):
     x = 0
+    # normalize base_dir to avoid path mismatches
+    base_dir = os.path.abspath(base_dir)
+
     for root, subdirs, files in os.walk(base_dir):
+        # Skip the base_dir itself
+        if os.path.abspath(root) == base_dir:
+            continue
         for d in subdirs:
             if d == pid:
                 x += 1
                 return os.path.join(root, d)
+
     if x == 0:
-        print('Please retype in patient ID')
+        print('Please retype patient ID:')
         new_pid = input()
-        find_dir(new_pid, base_dir)
+        return find_dir(new_pid, base_dir)
 
 
 def check_and_handle_directories(dir_list, pid):
