@@ -461,7 +461,8 @@ def tensor_estimation(DWI_shell, debug, pid):
 
     if debug == 'debug':
         print("DEBUG STEP: Check the FA and EV maps")
-        mrview_tensor = f"mrview -load {fa_tensor} -interpolation 0 -load {ev_tensor} -interpolation 0 -odf.load_tensor {dwi_tensor}"
+        # mrview_tensor = f"mrview -load {fa_tensor} -interpolation 0 -load {ev_tensor} -interpolation 0 -odf.load_tensor {dwi_tensor}"
+        mrview_tensor = f"mrview -load {fa_tensor} -interpolation 0 -load {ev_tensor} -interpolation 0"
         run(mrview_tensor)
 
     wm_fod = f"{current_dir}/mrtrix3_files/{pid}/fods/wm_fod.mif"
