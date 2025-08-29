@@ -54,13 +54,13 @@ def find_app(application, dir_1, dir_2, timeout_duration=5):
               "Please move it to either of these directories")
 
 
-def run_fsl(cmd, dependencies):
+def run_fsl(cmd, dependencies, pid):
     if dependencies['fsl']:
         if 'extracted_b0' in cmd:
             output_file = 'extracted_b0.txt'
         else:
             output_file = 'object.txt'
-        output_dir = f"./mrtrix3_files/misc/"
+        output_dir = f"./mrtrix3_files/{pid}/misc/"
         with open(f"{output_dir}{output_file}", 'w') as f:
             process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
         with open(f"{output_dir}{output_file}", 'r') as f:
@@ -75,7 +75,7 @@ def run_fsl(cmd, dependencies):
             output_file = 'extracted_b0.txt'
         else:
             output_file = 'object.txt'
-        output_dir = f"{base_dir}/mrtrix3_files/misc/"
+        output_dir = f"{base_dir}/mrtrix3_files/{pid}/misc/"
         current_dir = os.getcwd()
         with open(f"{output_dir}{output_file}", 'w') as f:
             process = subprocess.run(cmd.split(), stdout=f, stderr=subprocess.STDOUT)
@@ -112,10 +112,10 @@ def change_thresh(nii_dir, object_name, thresh, debug):
     return thresholded_obj
 
 
-def actual_registration(debug, dependencies):
+def actual_registration(debug, dependencies, pid):
 
-    nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
-    misc_dir = f"{current_dir}/mrtrix3_files/misc/"
+    nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
+    misc_dir = f"{current_dir}/mrtrix3_files/{pid}/misc/"
     b0_extract_nii = f"{nii_dir}extracted_b0.nii"
     nii_files = os.listdir(nii_dir)
     for i in nii_files:
@@ -140,8 +140,8 @@ def actual_registration(debug, dependencies):
     fslhd_cmd_1 = f"fslhd {b0_extract_nii}"
     fslhd_cmd_2 = f"fslhd {object_nii}"
 
-    run_fsl(fslhd_cmd_1, dependencies)
-    run_fsl(fslhd_cmd_2, dependencies)
+    run_fsl(fslhd_cmd_1, dependencies, pid)
+    run_fsl(fslhd_cmd_2, dependencies, pid)
 
     identical = zero_test(f"{misc_dir}extracted_b0.txt", f"{misc_dir}object.txt")
 
@@ -196,8 +196,8 @@ def actual_registration(debug, dependencies):
         return 1, cont, thresholded
 
 
-def registration(debug, dependencies):
+def registration(debug, dependencies, pid):
 
-    correct_trans, cont, registered = actual_registration(debug, dependencies)
+    correct_trans, cont, registered = actual_registration(debug, dependencies, pid)
 
     return correct_trans, cont, registered

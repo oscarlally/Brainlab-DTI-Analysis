@@ -31,7 +31,7 @@ def check_dependencies(dependencies):
 
         if filepath:
             print('✅ The dependency mrtrix3 was found on system path.')
-            dependencies['mrtrix3'] = True
+            dependencies['mrtrix'] = True
 
     except subprocess.CalledProcessError:
         print("❌ Error finding mrtrix on system path. The code will attempt to run regardless, but this could cause issues")
@@ -53,6 +53,8 @@ def check_dependencies(dependencies):
     except subprocess.CalledProcessError:
         print(f"❌ Error finding fsl on system path. The code will attempt to run regardless, but this could cause issues")
 
+    return dependencies
+
 
 def find_dir(pid, base_dir):
     x = 0
@@ -67,8 +69,8 @@ def find_dir(pid, base_dir):
         find_dir(new_pid, base_dir)
 
 
-def check_and_handle_directories(dir_list):
-    temp_root = 'mrtrix3_files/temp'
+def check_and_handle_directories(dir_list, pid):
+    temp_root = f"./mrtrix3_files/{pid}/temp"
     os.makedirs(temp_root, exist_ok=True)
 
     for directory in dir_list:
@@ -298,11 +300,11 @@ def get_counts(tck_image):
     return int(number)
 
 
-def convert_tracts(t1_nii, debug):
+def convert_tracts(t1_nii, debug, pid):
     current_dir = os.getcwd()
-    nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
-    tract_dir = f"{current_dir}/mrtrix3_files/tracts/"
-    fa_tensor = f"{current_dir}/mrtrix3_files/tensors/fa.mif"
+    nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
+    tract_dir = f"{current_dir}/mrtrix3_files/{pid}/tracts/"
+    fa_tensor = f"{current_dir}/mrtrix3_files/{pid}/tensors/fa.mif"
 
     tract_files = []
     dir_files = os.listdir(tract_dir)
@@ -351,16 +353,16 @@ def get_volumes(mif_image):
     return volumes
 
 
-def masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug):
+def masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug, pid):
     current_dir = os.getcwd()
     run(dwi_cmd)
     run(mr_conv_1_cmd)
     run(mr_conv_2_cmd)
 
-    b0_extract_nii = f"{current_dir}/mrtrix3_files/masking/extracted_b0.nii"
-    moved_b0_extract_nii = f"{current_dir}/mrtrix3_files/nifti/extracted_b0.nii"
-    b0_upsamp = f"{current_dir}/mrtrix3_files/masking/b0_upsamp.nii.gz"
-    b0_upsamp_mask = f"{current_dir}/mrtrix3_files/masking/b0_upsamp_mask.nii.gz"
+    b0_extract_nii = f"{current_dir}/mrtrix3_files/{pid}/masking/extracted_b0.nii"
+    moved_b0_extract_nii = f"{current_dir}/mrtrix3_files/{pid}/nifti/extracted_b0.nii"
+    b0_upsamp = f"{current_dir}/mrtrix3_files/{pid}/masking/b0_upsamp.nii.gz"
+    b0_upsamp_mask = f"{current_dir}/mrtrix3_files/{pid}/masking/b0_upsamp_mask.nii.gz"
 
     # Ensure the 'nifti' directory exists
     os.makedirs(os.path.dirname(moved_b0_extract_nii), exist_ok=True)
@@ -380,19 +382,19 @@ def masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug):
         subprocess.run(fsl_cmd.split())
         os.chdir(current_dir)
 
-    os.rename(b0_upsamp_mask, f"{current_dir}/mrtrix3_files/masking/mask_final.nii.gz")
-    with open(f"{current_dir}/mrtrix3_files/masking/mask_params.txt", 'a') as param_file:
+    os.rename(b0_upsamp_mask, f"{current_dir}/mrtrix3_files/{pid}/masking/mask_final.nii.gz")
+    with open(f"{current_dir}/mrtrix3_files/{pid}/masking/mask_params.txt", 'a') as param_file:
         param_file.write(f"The g-value is {g} and f-value is {f}\n")
 
 
-def create_mask(nii_list, debug):
+def create_mask(nii_list, debug, pid):
     current_dir = os.getcwd()
-    upsample_out = f"{current_dir}/mrtrix3_files/eddy/dwi_eddy_upsamp.mif"
-    b0_extract = f"{current_dir}/mrtrix3_files/masking/extracted_b0.mif"
-    b0_1_extract = f"{current_dir}/mrtrix3_files/masking/extracted_b0_1.mif"
-    b0_extract_nii = f"{current_dir}/mrtrix3_files/masking/extracted_b0.nii"
-    mask_final = f"{current_dir}/mrtrix3_files/masking/mask_final.nii.gz"
-    mask_mif = f"{current_dir}/mrtrix3_files/masking/mask_final.mif"
+    upsample_out = f"{current_dir}/mrtrix3_files/{pid}/eddy/dwi_eddy_upsamp.mif"
+    b0_extract = f"{current_dir}/mrtrix3_files/{pid}/masking/extracted_b0.mif"
+    b0_1_extract = f"{current_dir}/mrtrix3_files/{pid}/masking/extracted_b0_1.mif"
+    b0_extract_nii = f"{current_dir}/mrtrix3_files/{pid}/masking/extracted_b0.nii"
+    mask_final = f"{current_dir}/mrtrix3_files/{pid}/masking/mask_final.nii.gz"
+    mask_mif = f"{current_dir}/mrtrix3_files/{pid}/masking/mask_final.mif"
 
     nii_list.append(b0_extract_nii)
 
@@ -401,12 +403,12 @@ def create_mask(nii_list, debug):
         mr_conv_1_cmd = f"mrconvert {b0_extract} {b0_1_extract} -coord 3 0 -axes 0,1,2"
         mr_conv_2_cmd = f"mrconvert -strides -1,2,3 {b0_1_extract} {b0_extract_nii}"
 
-        masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug)
+        masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug, pid)
 
         continue_yn = input('Mask correct and continue with analysis? (y/n): ')
         if continue_yn.lower() != 'y':
-            rmtree(f"{current_dir}/mrtrix3_files/masking/")
-            os.makedirs(f"{current_dir}/mrtrix3_files/masking/")
+            rmtree(f"{current_dir}/mrtrix3_files/{pid}/masking/")
+            os.makedirs(f"{current_dir}/mrtrix3_files/{pid}/masking/")
             create_mask(nii_list, debug)
         else:
             print('Mask Successfully Made')
@@ -421,32 +423,32 @@ def create_mask(nii_list, debug):
 
             continue_yn = input('Mask correct and continue with analysis? (y/n): ')
             if continue_yn.lower() != 'y':
-                rmtree(f"{current_dir}/mrtrix3_files/masking/")
-                os.makedirs(f"{current_dir}/mrtrix3_files/masking/")
+                rmtree(f"{current_dir}/mrtrix3_files/{pid}/masking/")
+                os.makedirs(f"{current_dir}/mrtrix3_files/{pid}/masking/")
                 create_mask(nii_list, debug)
             else:
                 print('Mask Successfully Made')
 
 
-def tensor_estimation(DWI_shell, debug):
+def tensor_estimation(DWI_shell, debug, pid):
     current_dir = os.getcwd()
-    mask_final = f"{current_dir}/mrtrix3_files/masking/mask_final.nii.gz"
-    mask_mif = f"{current_dir}/mrtrix3_files/masking/mask_final.mif"
+    mask_final = f"{current_dir}/mrtrix3_files/{pid}/masking/mask_final.nii.gz"
+    mask_mif = f"{current_dir}/mrtrix3_files/{pid}/masking/mask_final.mif"
     mr_conv_3_cmd = f"mrconvert {mask_final} {mask_mif}"
     run(mr_conv_3_cmd)
 
-    response_wm = f"{current_dir}/mrtrix3_files/response/response_wm.txt"
-    response_gm = f"{current_dir}/mrtrix3_files/response/response_gm.txt"
-    response_csf = f"{current_dir}/mrtrix3_files/response/response_csf.txt"
-    response_voxels = f"{current_dir}/mrtrix3_files/response/response_voxels.mif"
+    response_wm = f"{current_dir}/mrtrix3_files/{pid}/response/response_wm.txt"
+    response_gm = f"{current_dir}/mrtrix3_files/{pid}/response/response_gm.txt"
+    response_csf = f"{current_dir}/mrtrix3_files/{pid}/response/response_csf.txt"
+    response_voxels = f"{current_dir}/mrtrix3_files/{pid}/response/response_voxels.mif"
 
     """TENSOR ESTIMATION"""
 
-    upsample_out = f"{current_dir}/mrtrix3_files/eddy/dwi_eddy_upsamp.mif"
-    dwi_tensor = f"{current_dir}/mrtrix3_files/tensors/dwi_tensor.mif"
-    fa_tensor = f"{current_dir}/mrtrix3_files/tensors/fa.mif"
-    ev_tensor = f"{current_dir}/mrtrix3_files/tensors/ev.mif"
-    fa_nii = f"{current_dir}/mrtrix3_files/tensors/fa.nii.gz"
+    upsample_out = f"{current_dir}/mrtrix3_files/{pid}/eddy/dwi_eddy_upsamp.mif"
+    dwi_tensor = f"{current_dir}/mrtrix3_files/{pid}/tensors/dwi_tensor.mif"
+    fa_tensor = f"{current_dir}/mrtrix3_files/{pid}/tensors/fa.mif"
+    ev_tensor = f"{current_dir}/mrtrix3_files/{pid}/tensors/ev.mif"
+    fa_nii = f"{current_dir}/mrtrix3_files/{pid}/tensors/fa.nii.gz"
 
     if not os.path.exists(dwi_tensor):
         print("Step 7: Tensor estimation")
@@ -462,11 +464,11 @@ def tensor_estimation(DWI_shell, debug):
         mrview_tensor = f"mrview -load {fa_tensor} -interpolation 0 -load {ev_tensor} -interpolation 0 -odf.load_tensor {dwi_tensor}"
         run(mrview_tensor)
 
-    wm_fod = f"{current_dir}/mrtrix3_files/fods/wm_fod.mif"
-    wm_fod_int = f"{current_dir}/mrtrix3_files/fods/wm_fod_int.mif"
-    csf_fod = f"{current_dir}/mrtrix3_files/fods/csf_fod.mif"
-    gm_fod = f"{current_dir}/mrtrix3_files/fods/gm_fod.mif"
-    tissue_vf = f"{current_dir}/mrtrix3_files/fods/tissue_vf.mif"
+    wm_fod = f"{current_dir}/mrtrix3_files/{pid}/fods/wm_fod.mif"
+    wm_fod_int = f"{current_dir}/mrtrix3_files/{pid}/fods/wm_fod_int.mif"
+    csf_fod = f"{current_dir}/mrtrix3_files/{pid}/fods/csf_fod.mif"
+    gm_fod = f"{current_dir}/mrtrix3_files/{pid}/fods/gm_fod.mif"
+    tissue_vf = f"{current_dir}/mrtrix3_files/{pid}/fods/tissue_vf.mif"
 
     # Perform multi shell multi tissue constrained spherical deconvolution
     if DWI_shell.lower() == 'n':

@@ -26,18 +26,18 @@ from functions import norm_nii, \
 
 # Check fsl and mrtrix dependencies
 dependencies = {'mrtrix': False, 'fsl': False}
+dependencies = check_dependencies(dependencies)
 
-check_dependencies(dependencies)
 if dependencies['mrtrix'] and dependencies['fsl']:
     from functions import run
 else:
     from functions import run_unknown as run
 
 # Define data directories
-# home_dir = os.path.expanduser("~")
-# pid = input('Please type in the patient number:  ')
-# diff_data_dir = find_dir(pid, home_dir)
-diff_data_dir = "/Users/oscarlally/Desktop/CCL/170119364"
+home_dir = os.path.expanduser("~")
+print("This code only runs automatically provided there is a UNIQUE folder with the patient ID")
+pid = input('Please type in the patient number:  ')
+diff_data_dir = find_dir(pid, home_dir)
 
 def main():
     intro()
@@ -47,75 +47,75 @@ def main():
     # Centralized dictionary for all file paths
     file_paths = {
         "output_dirs": [
-            "mrtrix3_files/converted",
-            "mrtrix3_files/concatenated",
-            "mrtrix3_files/denoised",
-            "mrtrix3_files/calc",
-            "mrtrix3_files/degibbs",
-            "mrtrix3_files/eddy",
-            "mrtrix3_files/response",
-            "mrtrix3_files/masking",
-            "mrtrix3_files/tensors",
-            "mrtrix3_files/fods",
-            "mrtrix3_files/misc",
-            "mrtrix3_files/rois",
-            "mrtrix3_files/tracts",
-            "mrtrix3_files/t1",
-            "mrtrix3_files/overlays",
-            "mrtrix3_files/volumes",
-            "mrtrix3_files/template",
-            "mrtrix3_files/nifti"
+            f"mrtrix3_files/{pid}/converted",
+            f"mrtrix3_files/{pid}/concatenated",
+            f"mrtrix3_files/{pid}/denoised",
+            f"mrtrix3_files/{pid}/calc",
+            f"mrtrix3_files/{pid}/degibbs",
+            f"mrtrix3_files/{pid}/eddy",
+            f"mrtrix3_files/{pid}/response",
+            f"mrtrix3_files/{pid}/masking",
+            f"mrtrix3_files/{pid}/tensors",
+            f"mrtrix3_files/{pid}/fods",
+            f"mrtrix3_files/{pid}/misc",
+            f"mrtrix3_files/{pid}/rois",
+            f"mrtrix3_files/{pid}/tracts",
+            f"mrtrix3_files/{pid}/t1",
+            f"mrtrix3_files/{pid}/overlays",
+            f"mrtrix3_files/{pid}/volumes",
+            f"mrtrix3_files/{pid}/template",
+            f"mrtrix3_files/{pid}/nifti"
         ],
         "converted": [],
         "b0": None,
         "b0_rev": None,
-        "concat_file": f"{os.getcwd()}/mrtrix3_files/concatenated/combined_dwi.mif",
-        "denoise_file": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_dwi.mif",
-        "denoise_ap": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_ap.mif",
-        "denoise_pa": f"{os.getcwd()}/mrtrix3_files/denoised/denoised_pa.mif",
-        "resid_output": f"{os.getcwd()}/mrtrix3_files/calc/dwi_denoise_residuals.mif",
-        "degibbs_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs.mif",
-        "template_file": f"{os.getcwd()}/mrtrix3_files/template/template.dcm",
-        "alt_template_file": f"{os.getcwd()}/mrtrix3_files/template/alt_template.dcm",
-        "template_file_t2": f"{os.getcwd()}/mrtrix3_files/template/template_t2.dcm",
-        "template_file_flair": f"{os.getcwd()}/mrtrix3_files/template/template_flair.dcm",
-        "template_file_t1": f"{os.getcwd()}/mrtrix3_files/template/template_t1.dcm",
-        "template_file_t1_post": f"{os.getcwd()}/mrtrix3_files/template/template_t1_post.dcm",
-        "flair_file_nii": f"{os.getcwd()}/mrtrix3_files/nifti/flair.nii",
-        "t2_file_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t2.nii",
-        "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_flair.nii",
-        "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_t2.nii",
-        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_post_t1.nii",
-        "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/nifti/reg_t1.nii",
-        "t1_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t1.nii",
-        "t1_mif": f"{os.getcwd()}/mrtrix3_files/converted/t1.mif",
-        "t1_post_nii": f"{os.getcwd()}/mrtrix3_files/nifti/t1_post.nii",
-        "t1_post_mif": f"{os.getcwd()}/mrtrix3_files/converted/t1_post.mif",
-        "degibbs_ap_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_ap.mif",
-        "flirt_transform": f"{os.getcwd()}/mrtrix3_files/misc/flair_to_t1.mat",
-        "t1_transform": f"{os.getcwd()}/mrtrix3_files/misc/t1_to_t1.mat",
-        "degibbs_pa_file": f"{os.getcwd()}/mrtrix3_files/degibbs/dwi_degibbs_pa.mif",
-        "degibbs_pair_file": f"{os.getcwd()}/mrtrix3_files/degibbs/degibbs_pair.mif",
-        "degibbs_ap_n": f"{os.getcwd()}/mrtrix3_files/degibbs/b0_AP_degibbs_N.mif",
-        "degibbs_ap_pa_n": f"{os.getcwd()}/mrtrix3_files/degibbs/b0_AP_PA_degibbs_N.mif",
-        "eddy_file": f"{os.getcwd()}/mrtrix3_files/eddy/dwi_preprocessed_eddy.mif",
-        "upsample_out": f"{os.getcwd()}/mrtrix3_files/eddy/dwi_eddy_upsamp.mif",
-        "response_wm": f"{os.getcwd()}/mrtrix3_files/response/response_wm.txt",
-        "response_gm": f"{os.getcwd()}/mrtrix3_files/response/response_gm.txt",
-        "response_csf": f"{os.getcwd()}/mrtrix3_files/response/response_csf.txt",
-        "response_voxels": f"{os.getcwd()}/mrtrix3_files/response/response_voxels.mif",
-        "fa": f"{os.getcwd()}/mrtrix3_files/tensors/fa.mif",
-        "ev": f"{os.getcwd()}/mrtrix3_files/tensors/ev.mif",
-        "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/tensors/dwi_tensor.mif",
-        "nii_file": '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii',
+        "concat_file": f"{os.getcwd()}/mrtrix3_files/{pid}/concatenated/combined_dwi.mif",
+        "denoise_file": f"{os.getcwd()}/mrtrix3_files/{pid}/denoised/denoised_dwi.mif",
+        "denoise_ap": f"{os.getcwd()}/mrtrix3_files/{pid}/denoised/denoised_ap.mif",
+        "denoise_pa": f"{os.getcwd()}/mrtrix3_files/{pid}/denoised/denoised_pa.mif",
+        "resid_output": f"{os.getcwd()}/mrtrix3_files/{pid}/calc/dwi_denoise_residuals.mif",
+        "degibbs_file": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/dwi_degibbs.mif",
+        "template_file": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template.dcm",
+        "alt_template_file": f"{os.getcwd()}/mrtrix3_files/{pid}/template/alt_template.dcm",
+        "template_file_t2": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template_t2.dcm",
+        "template_file_flair": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template_flair.dcm",
+        "template_file_t1": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template_t1.dcm",
+        "template_file_t1_post": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template_t1_post.dcm",
+        "flair_file_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/flair.nii",
+        "t2_file_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t2.nii",
+        "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_flair.nii",
+        "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t2.nii",
+        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_post_t1.nii",
+        "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t1.nii",
+        "t1_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t1.nii",
+        "t1_mif": f"{os.getcwd()}/mrtrix3_files/{pid}/converted/t1.mif",
+        "t1_post_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t1_post.nii",
+        "t1_post_mif": f"{os.getcwd()}/mrtrix3_files/{pid}/converted/t1_post.mif",
+        "degibbs_ap_file": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/dwi_degibbs_ap.mif",
+        "flirt_transform": f"{os.getcwd()}/mrtrix3_files/{pid}/misc/flair_to_t1.mat",
+        "t1_transform": f"{os.getcwd()}/mrtrix3_files/{pid}/misc/t1_to_t1.mat",
+        "degibbs_pa_file": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/dwi_degibbs_pa.mif",
+        "degibbs_pair_file": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/degibbs_pair.mif",
+        "degibbs_ap_n": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/b0_AP_degibbs_N.mif",
+        "degibbs_ap_pa_n": f"{os.getcwd()}/mrtrix3_files/{pid}/degibbs/b0_AP_PA_degibbs_N.mif",
+        "eddy_file": f"{os.getcwd()}/mrtrix3_files/{pid}/eddy/dwi_preprocessed_eddy.mif",
+        "upsample_out": f"{os.getcwd()}/mrtrix3_files/{pid}/eddy/dwi_eddy_upsamp.mif",
+        "response_wm": f"{os.getcwd()}/mrtrix3_files/{pid}/response/response_wm.txt",
+        "response_gm": f"{os.getcwd()}/mrtrix3_files/{pid}/response/response_gm.txt",
+        "response_csf": f"{os.getcwd()}/mrtrix3_files/{pid}/response/response_csf.txt",
+        "response_voxels": f"{os.getcwd()}/mrtrix3_files/{pid}/response/response_voxels.mif",
+        "fa": f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/fa.mif",
+        "ev": f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/ev.mif",
+        "dwi_tensor": f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/dwi_tensor.mif",
+        "nii_file": f"{os.getcwd()}/mrtrix3_files/{pid}/masking/extracted_b0.nii",
         "registered": []
     }
 
 
     # Ensure output directories exist
-    # check_and_handle_directories(file_paths["output_dirs"])
+    check_and_handle_directories(file_paths["output_dirs"], pid)
 
-    b0s_check = get_full_file_names(f"{os.getcwd()}/mrtrix3_files/converted")
+    b0s_check = get_full_file_names(f"{os.getcwd()}/mrtrix3_files/{pid}/converted")
     if len(b0s_check) != 0:
         for i in b0s_check:
             if 'b0' in i and 'flipped' in i:
@@ -128,7 +128,7 @@ def main():
         # Convert diffusion files to .mif and categorize by type
         for i in get_full_file_names(diff_data_dir):
             if 'ep2d' in i.lower() and 'fa' not in i.lower():
-                convert = f"{os.getcwd()}/mrtrix3_files/converted/{os.path.basename(i)}.mif"
+                convert = f"{os.getcwd()}/mrtrix3_files/{pid}/converted/{os.path.basename(i)}.mif"
                 result_cmd = f"mrconvert {i} {convert}"
                 run(result_cmd)
                 file_paths["converted"].append(convert)
@@ -256,9 +256,9 @@ def main():
     if step == 8 and cont.lower() == 'y':
         # Masking
         nii_files = []
-        create_mask(nii_files, 'debug')
+        create_mask(nii_files, 'debug', pid)
         file_paths[
-            'nii_file'] = '/Users/oscarlally/Documents/GitHub/Brainlab-DTI-Analysis/mrtrix3_files/masking/extracted_b0.nii'
+            'nii_file'] = f"{os.getcwd()}/mrtrix3_files/{pid}/masking/extracted_b0.nii"
 
         step += 1
         cont = input('Continue? (y/n): ')
@@ -266,7 +266,7 @@ def main():
     if step == 9 and cont.lower() == 'y':
         # Tensors
         dwi_shell = input('Is the data multi-shelled? (y/n): ')
-        tensor_estimation(dwi_shell, 'debug')
+        tensor_estimation(dwi_shell, 'debug', pid)
         step += 1
         cont = input('Continue? (y/n): ')
 
@@ -282,7 +282,7 @@ def main():
         print('-------------------------')
 
         while True:
-            print('Please save any ROIs in the roi folder in the sub directory /mrtrix3/rois that is in the directory of this code.')
+            print('Please save any ROIs in the roi folder in the sub directory /mrtrix3/patient_number/rois that is in the directory of this code.')
             print('This should be obvious as one of the sub directories will appear at the top of the ROI editor.')
             print()
             choice = input('Do you need to create any ROIs? (y/n). ')
@@ -320,9 +320,9 @@ def main():
     if step == 11 and cont.lower() == 'y':
 
         first_flag = True
-        def create_tract(tract_selection_no, first_flag):
+        def create_tract(tract_selection_no, first_flag, pid):
             while True:
-                tract_path, check = run_tract_generation(tract_selection_no, first_flag, False)
+                tract_path, check = run_tract_generation(pid, tract_selection_no, first_flag, False)
                 if check.lower() == 'y':
                     return tract_path  # exit cleanly
                 else:
@@ -330,10 +330,10 @@ def main():
 
         tract_names = []
         while True:
-            tract_selection_no = tract_selection_check('./mrtrix3_files/rois')
+            tract_selection_no = tract_selection_check(f"./mrtrix3_files/{pid}/rois")
             if tract_selection_no == 's':
                 break
-            tract_path = create_tract(tract_selection_no, first_flag)
+            tract_path = create_tract(tract_selection_no, first_flag, pid)
             tract_names.append(tract_path)
             additional_tract = input('Would you like additional tracts? (y/n): ')
             if additional_tract.lower() == 'n':
@@ -343,19 +343,19 @@ def main():
 
     if step == 12 and cont.lower() == 'y':
         if os.path.isfile(file_paths['reg_t1_file']):
-            convert_tracts(file_paths['t1_post_nii'], 'debug')
+            convert_tracts(file_paths['t1_post_nii'], 'debug', pid)
         if os.path.isfile(file_paths['reg_t1_post_file']):
-            convert_tracts(file_paths['t1_nii'], 'debug')
+            convert_tracts(file_paths['t1_nii'], 'debug', pid)
         if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_file']):
-            nii_files = os.listdir('./mrtrix3_files/nifti')
+            nii_files = os.listdir(f"./mrtrix3_files/{pid}/nifti")
             t1_nii_file = None
             for i in nii_files:
                 if 't1' in i:
-                    t1_nii_file = './mrtrix3_files/nifti/' + i
+                    t1_nii_file = f"./mrtrix3_files/{pid}/nifti/" + i
                     break
-            convert_tracts(t1_nii_file, 'debug')
+            convert_tracts(t1_nii_file, 'debug', pid)
 
-        _, is_cont, registered = registration('debug', dependencies)
+        _, is_cont, registered = registration('debug', dependencies, pid)
         file_paths["registered"].append(registered)
         cont = is_cont
         step += 1
@@ -368,7 +368,7 @@ def main():
         "Select the template file you want to use if more than one is available"
         template_file = None
         t2_check = None
-        templates_to_use = os.listdir('./mrtrix3_files/template')
+        templates_to_use = os.listdir(f"./mrtrix3_files/{pid}/template")
         for x in templates_to_use:
             if 'alt' in x:
                 t2_check = True
@@ -388,7 +388,7 @@ def main():
 
         "Get the correct .nii file depending on which data you end up having."
         current_dir = os.getcwd()
-        nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
+        nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
         print()
         print()
         print('-----------------')
@@ -405,9 +405,9 @@ def main():
 
 
         "Work horse of the actual dicom creation"
-        nii_dir = f"{current_dir}/mrtrix3_files/nifti/"
-        overlay_dir = f"{current_dir}/mrtrix3_files/overlays/"
-        final_dir = f"{current_dir}/mrtrix3_files/volumes/"
+        nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
+        overlay_dir = f"{current_dir}/mrtrix3_files/{pid}/overlays/"
+        final_dir = f"{current_dir}/mrtrix3_files/{pid}/volumes/"
 
         relevant_dcm = pydicom.dcmread(template_file)
         data_dicom = relevant_dcm.pixel_array
@@ -494,8 +494,8 @@ def main():
                     dataset = pydicom.dcmread(object_path)
                     patient_no = dataset.PatientID
                     if str(patient_no) in diff_data_dir.lower():
-                        if not os.path.isdir(f"{diff_data_dir}/Processed"):
-                            copy_directory(f"{os.getcwd()}/mrtrix3_files", f"{diff_data_dir}/Processed")
+                        if not os.path.isdir(f"{diff_data_dir}/Processed/"):
+                            copy_directory(f"{os.getcwd()}/mrtrix3_files/{pid}/", f"{diff_data_dir}/Processed/")
                         else:
                             safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/mrtrix3_files/volumes")
                         break  # Done with DICOM tuning
@@ -511,4 +511,3 @@ def main():
                 break
 
 main()
-

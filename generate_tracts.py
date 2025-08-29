@@ -13,20 +13,20 @@ def finish_check():
     check = input('Are you happy with the tract? (y/n):  ')
     return check
 
-def display_tract(tract_path):
+def display_tract(tract_path, pid):
     """Display the generated tract in mrview."""
-    white_matter = f"{os.getcwd()}/mrtrix3_files/fods/wm_fod.mif"
+    white_matter = f"{os.getcwd()}/mrtrix3_files/{pid}/fods/wm_fod.mif"
     print(f"Displaying tract: {tract_path}")
     run(f"mrview -mode 2 -load {white_matter} -interpolation 0 -tractography.load {tract_path}")
 
-def tract_run(command_parts, seed=None, includes=None, excludes=None, notes=None):
+def tract_run(pid, command_parts, seed=None, includes=None, excludes=None, notes=None):
     subprocess.run(command_parts)
     tract_path = get_tract_path(command_parts)
-    display_tract(tract_path)
+    display_tract(tract_path, pid)
     check = finish_check()
     return tract_path, check
 
-def confirm_and_run(command_parts, seed=None, includes=None, excludes=None, notes=None):
+def confirm_and_run(pid, command_parts, seed=None, includes=None, excludes=None, notes=None):
     """
     Show tractography parameters before running and allow editing.
     Handles seeds, includes, excludes, and general tckgen options.
@@ -136,12 +136,12 @@ def confirm_and_run(command_parts, seed=None, includes=None, excludes=None, note
 
     subprocess.run(command_parts)
     tract_path = get_tract_path(command_parts)
-    display_tract(tract_path)
+    display_tract(tract_path, pid)
     check = finish_check()
     return tract_path, check
 
 
-def run_tract_generation(choice, first_flag, finished_flag):
+def run_tract_generation(pid, choice, first_flag, finished_flag):
 
     dispatch = {
         "default": tract_run,
@@ -156,177 +156,177 @@ def run_tract_generation(choice, first_flag, finished_flag):
 
     if choice == "1":
         print("Running AF tract...")
-        if os.path.isfile("mrtrix3_files/rois/AF_L.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-AF_L.tck",
-                "-seed_image", "mrtrix3_files/rois/AF_L.mif",
-                "-include", "mrtrix3_files/rois/SLF_L.mif",
-                "-include", "mrtrix3_files/rois/BROCA_L.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/AF_L.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-AF_L.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/AF_L.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/SLF_L.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/BROCA_L.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "5", "-force"
             ], seed="AF_L", includes=["SLF_L", "BROCA_L"], notes="AF Left hemisphere")
-        if os.path.isfile("mrtrix3_files/rois/AF_R.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-AF_R.tck",
-                "-seed_image", "mrtrix3_files/rois/AF_R.mif",
-                "-include", "mrtrix3_files/rois/SLF_R.mif",
-                "-include", "mrtrix3_files/rois/BROCA_R.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/AF_R.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-AF_R.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/AF_R.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/SLF_R.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/BROCA_R.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "5000", "-force"
             ], seed="AF_R", includes=["SLF_R", "BROCA_R"], notes="AF Right hemisphere")
         return tract_path, check
 
     elif choice == "2":
         print("Running MHA tract...")
-        if os.path.isfile("mrtrix3_files/rois/RHandM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-RH_MHA.tck",
-                "-include", "mrtrix3_files/rois/L-Ped.mif",
-                "-seed_image", "mrtrix3_files/rois/RHandM1.mif",
-                "-include", "mrtrix3_files/rois/L-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/RHandM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-RH_MHA.tck",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/RHandM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-force"
             ], seed="RHandM1", includes=["L-Ped", "L-Cap"], notes="Motor Hand CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LHandM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-LH_MHA.tck",
-                "-include", "mrtrix3_files/rois/R-Ped.mif",
-                "-seed_image", "mrtrix3_files/rois/LHandM1.mif",
-                "-include", "mrtrix3_files/rois/R-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LHandM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-LH_MHA.tck",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LHandM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-seed_unidirectional", "-force"
             ], seed="LHandM1", includes=["R-Ped", "R-Cap"], notes="Motor Hand CST Left")
         return tract_path, check
 
     elif choice == "3":
         print("Running Sensory Hand Area tract...")
-        if os.path.isfile("mrtrix3_files/rois/RHandS1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R-SHA.tck",
-                "-seed_image", "mrtrix3_files/rois/RHandS1.mif",
-                "-include", "mrtrix3_files/rois/L-Thal.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/RHandS1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-SHA.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/RHandS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Thal.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1"
             ], seed="RHandS1", includes=["L-Thal"], notes="Sensory Hand CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LHandS1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L-SHA.tck",
-                "-seed_image", "mrtrix3_files/rois/LHandS1.mif",
-                "-include", "mrtrix3_files/rois/R-Thal.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LHandS1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-SHA.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LHandS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Thal.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1"
             ], seed="LHandS1", includes=["R-Thal"], notes="Sensory Hand CST Left")
         return tract_path, check
 
     elif choice == "4":
         print("Running Lip Motor CST...")
-        if os.path.isfile("mrtrix3_files/rois/LipM1.mif") and os.path.isfile("mrtrix3_files/rois/L-Cap.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R-Lip.tck",
-                "-include", "mrtrix3_files/rois/L-Ped.mif",
-                "-seed_image", "mrtrix3_files/rois/LipM1.mif",
-                "-include", "mrtrix3_files/rois/L-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LipM1.mif") and os.path.isfile(f"mrtrix3_files/{pid}/rois/L-Cap.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-Lip.tck",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LipM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="LipM1", includes=["L-Ped", "L-Cap"], notes="Lip Motor CST Right")
 
-        if os.path.isfile("mrtrix3_files/rois/LipM1.mif") and os.path.isfile("mrtrix3_files/rois/R-Cap.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L-Lip.tck",
-                "-include", "mrtrix3_files/rois/R-Ped.mif",
-                "-seed_image", "mrtrix3_files/rois/LipM1.mif",
-                "-include", "mrtrix3_files/rois/R-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LipM1.mif") and os.path.isfile(f"mrtrix3_files/{pid}/rois/R-Cap.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-Lip.tck",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LipM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="LipM1", includes=["R-Ped", "R-Cap"], notes="Lip Motor CST Left")
         return tract_path, check
 
     elif choice == "5":
         print("Running Lip Sensory CST...")
-        if os.path.isfile("mrtrix3_files/rois/LipS1.mif") and os.path.isfile("mrtrix3_files/rois/L-Cap.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R-LipSens.tck",
-                "-seed_image", "mrtrix3_files/rois/LipS1.mif",
-                "-include", "mrtrix3_files/rois/L-Ped.mif",
-                "-include", "mrtrix3_files/rois/L-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LipS1.mif") and os.path.isfile(f"mrtrix3_files/{pid}/rois/L-Cap.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-LipSens.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LipS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="LipS1", includes=["L-Ped", "L-Cap"], notes="Lip Sensory CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LipM1.mif") and os.path.isfile("mrtrix3_files/rois/R-Cap.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L-LipSens.tck",
-                "-seed_image", "mrtrix3_files/rois/LipS1.mif",
-                "-include", "mrtrix3_files/rois/R-Ped.mif",
-                "-include", "mrtrix3_files/rois/R-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LipM1.mif") and os.path.isfile(f"mrtrix3_files/{pid}/rois/R-Cap.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-LipSens.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LipS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="LipS1", includes=["R-Ped", "R-Cap"], notes="Lip Sensory CST Left")
         return tract_path, check
 
     elif choice == "6":
         print("Running Foot Motor CST...")
-        if os.path.isfile("mrtrix3_files/rois/RFootM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-RF_MFO.tck",
-                "-seed_image", "mrtrix3_files/rois/RFootM1.mif",
-                "-include", "mrtrix3_files/rois/L-Ped.mif",
-                "-include", "mrtrix3_files/rois/L-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/RFootM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-RF_MFO.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/RFootM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="RFootM1", includes=["L-Ped", "L-Cap"], notes="Foot Motor CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LFootM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-LF_MFO.tck",
-                "-seed_image", "mrtrix3_files/rois/LFootM1.mif",
-                "-include", "mrtrix3_files/rois/R-Ped.mif",
-                "-include", "mrtrix3_files/rois/R-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LFootM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-LF_MFO.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LFootM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1", "-seed_unidirectional", "-force"
             ], seed="LFootM1", includes=["R-Ped", "R-Cap"], notes="Foot Motor CST Left")
         return tract_path, check
 
     elif choice == "7":
         print("Running Optic Radiation...")
-        if os.path.isfile("mrtrix3_files/rois/L-LGN.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L-OR_UNI.tck",
-                "-seed_image", "mrtrix3_files/rois/L-LGN.mif",
-                "-include", "mrtrix3_files/rois/L-latCalc.mif",
-                "-include", "mrtrix3_files/rois/L-latVentr.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/L-LGN.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-OR_UNI.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/L-LGN.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-latCalc.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-latVentr.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-seed_unidirectional"
             ], seed="L-LGN", includes=["L-latCalc", "L-latVentr"], notes="Optic Radiation Left")
-        if os.path.isfile("mrtrix3_files/rois/R-LGN.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R-OR_UNI.tck",
-                "-seed_image", "mrtrix3_files/rois/R-LGN.mif",
-                "-include", "mrtrix3_files/rois/R-latCalc.mif",
-                "-include", "mrtrix3_files/rois/R-latVentr.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/R-LGN.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-OR_UNI.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/R-LGN.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-latCalc.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-latVentr.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-seed_unidirectional"
             ], seed="R-LGN", includes=["R-latCalc", "R-latVentr"], notes="Optic Radiation Right")
         return tract_path, check
 
     elif choice == "8":
         print("Running Sensory Foot CST...")
-        if os.path.isfile("mrtrix3_files/rois/RFootS1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R-SFO.tck",
-                "-seed_image", "mrtrix3_files/rois/RFootS1.mif",
-                "-include", "mrtrix3_files/rois/L-Thal.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/RFootS1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-SFO.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/RFootS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Thal.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1"
             ], seed="RFootS1", includes=["L-Thal"], notes="Sensory Foot CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LFootS1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L-SFO.tck",
-                "-seed_image", "mrtrix3_files/rois/LFootS1.mif",
-                "-include", "mrtrix3_files/rois/R-Thal.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LFootS1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-SFO.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LFootS1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Thal.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.1"
             ], seed="LFootS1", includes=["R-Thal"], notes="Sensory Foot CST Left")
         return tract_path, check
 
     elif choice.lower() == "9":
         print("Running MFace CST...")
-        if os.path.isfile("mrtrix3_files/rois/RFaceM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-R_MFace.tck",
-                "-seed_image", "mrtrix3_files/rois/RFaceM1.mif",
-                "-include", "mrtrix3_files/rois/L-Ped.mif",
-                "-include", "mrtrix3_files/rois/L-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/RFaceM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R_MFace.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/RFaceM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-force"
             ], seed="RFaceM1", includes=["L-Ped", "L-Cap"], notes="Motor Face CST Right")
-        if os.path.isfile("mrtrix3_files/rois/LFaceM1.mif"):
-            tract_path, check = dispatch[flag]([
-                "tckgen", "mrtrix3_files/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L_MFace.tck",
-                "-seed_image", "mrtrix3_files/rois/LFaceM1.mif",
-                "-include", "mrtrix3_files/rois/R-Ped.mif",
-                "-include", "mrtrix3_files/rois/R-Cap.mif",
+        if os.path.isfile(f"mrtrix3_files/{pid}/rois/LFaceM1.mif"):
+            tract_path, check = dispatch[flag](pid, [
+                "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", "mrtrix3_files/tracts/mrtrix3-L_MFace.tck",
+                "-seed_image", f"mrtrix3_files/{pid}/rois/LFaceM1.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
+                "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
                 "-step", "1", "-angle", "45", "-cutoff", "0.05", "-force"
             ], seed="LFaceM1", includes=["R-Ped", "R-Cap"], notes="Motor Face CST Left")
         return tract_path, check
@@ -340,7 +340,7 @@ def run_tract_generation(choice, first_flag, finished_flag):
         run(cmd)
         a = cmd.split(' ')
         tract_output = [element for element in a if '.tck' in element][0]
-        display_tract(tract_output)
+        display_tract(tract_output, pid)
         check = finish_check()
 
         print(tract_output, check)

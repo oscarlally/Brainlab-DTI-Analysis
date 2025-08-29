@@ -84,7 +84,7 @@ def tract_selection_check(roi_dir):
         else:
             print("\nSummary:")
             if missing_seeds:
-                print(f"  Missing seeds: {', '.join(missing_seeds)}")
+                print(f"  Missing seeds ❌: {', '.join(missing_seeds)}")
             if partial_seeds:
                 for seed, missing in partial_seeds:
                     print(f"  Seed {seed} missing ROIs: {', '.join(missing)}")
