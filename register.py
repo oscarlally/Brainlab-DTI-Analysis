@@ -162,8 +162,8 @@ def actual_registration(debug, dependencies, pid):
 
             thresh = input('Please type in the threshold value that you want to try: ')
             print()
-            print('NB: If you are changing the threshold via fsleyes and you want to save that threshold, \n'
-                  'then please save the thresholded tract in the mrtrix3_files/nifti directory.')
+            print("NB: If you are changing the threshold via fsleyes and you want to save that threshold, \n"
+                  f"then please save the thresholded tract in the mrtrix3_files/{pid}/nifti directory.")
 
             thresholded = change_thresh(nii_dir, object_name, thresh, debug)
 
