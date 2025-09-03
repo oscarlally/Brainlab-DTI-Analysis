@@ -7,14 +7,15 @@ Created on 15/02/2023
 """
 
 import os
+import re
+import json
+import time
 import shutil
-from shutil import rmtree
+import signal
+import subprocess
 import numpy as np
 import nibabel as nib
-import subprocess
-import signal
-import re
-import time
+from shutil import rmtree
 
 
 def check_dependencies(dependencies):
@@ -70,6 +71,36 @@ def find_dir(pid, base_dir):
         print('Please retype patient ID:')
         new_pid = input()
         return find_dir(new_pid, base_dir)
+
+
+def cache_check(pid, base_dir):
+    # Load existing JSON
+    with open("./cache.json", "r") as f:
+        data = json.load(f)
+
+    stored = data["stored_patient_directories"]
+
+    # Check if any stored directory matches the pid
+    for directory in stored:
+        if pid in directory:
+            if os.path.isdir(directory):
+                return directory
+            else:
+                # Directory exists in cache but not on disk -> update
+                new_directory = find_dir(pid, base_dir)
+                stored.remove(directory)
+                stored.append(new_directory)
+                break
+    else:
+        # If no matching directory was found at all
+        new_directory = find_dir(pid, base_dir)
+        stored.append(new_directory)
+
+    # Save back to JSON
+    with open("./cache.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+    return stored[-1]  # return the latest directory found
 
 
 def check_and_handle_directories(dir_list, pid):

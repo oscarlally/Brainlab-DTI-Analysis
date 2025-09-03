@@ -10,7 +10,7 @@ from functions import check_and_handle_directories, \
     register_pre_images, \
     get_volumes, \
     create_mask, \
-    find_dir, \
+    cache_check, \
     safe_copy, \
     tensor_estimation, \
     convert_tracts, \
@@ -33,11 +33,13 @@ if dependencies['mrtrix'] and dependencies['fsl']:
 else:
     from functions import run_unknown as run
 
+
 # Define data directories
 home_dir = os.path.expanduser("~")
 print("This code only runs automatically provided there is a UNIQUE folder with the patient ID")
 pid = input('Please type in the patient number:  ')
-diff_data_dir = find_dir(pid, home_dir)
+diff_data_dir = cache_check(pid, home_dir)
+
 
 def main():
     intro()
