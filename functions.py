@@ -103,6 +103,21 @@ def cache_check(pid, base_dir):
     return stored[-1]  # return the latest directory found
 
 
+def amend_filenames(folder):
+    for filepath_end in os.listdir(folder):
+        filepath = f"{folder}/{filepath_end}"
+        path = Path(filepath)
+        
+        # Skip if it's a directory
+        if path.is_dir():
+            continue
+            
+        has_ext = bool(os.path.splitext(filepath)[1])
+        if not has_ext:
+            new_path = path.with_suffix('.dcm')
+            path.rename(new_path)
+
+
 def check_and_handle_directories(dir_list, pid):
     temp_root = f"./mrtrix3_files/{pid}/temp"
     os.makedirs(temp_root, exist_ok=True)
