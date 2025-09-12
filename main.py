@@ -8,6 +8,7 @@ from tract_roi_match import roi_table
 from functions import check_and_handle_directories, \
     get_full_file_names, \
     register_pre_images, \
+    amend_filenames, \
     get_volumes, \
     create_mask, \
     cache_check, \
@@ -39,6 +40,11 @@ home_dir = os.path.expanduser("~")
 print("This code only runs automatically provided there is a UNIQUE folder with the patient ID")
 pid = input('Please type in the patient number:  ')
 diff_data_dir = cache_check(pid, home_dir)
+
+# Convert to .dcm if needs be
+for images in os.listdir(diff_data_dir):
+    if 'processed' not in images.lower():
+        amend_filenames(f"{diff_data_dir}/{images}")
 
 
 def main():
