@@ -42,7 +42,11 @@ pid = input('Please type in the patient number:  ')
 diff_data_dir = cache_check(pid, home_dir)
 
 # Convert to .dcm if needs be
-for images in os.listdir(diff_data_dir):
+diff_data_dirs = os.listdir(diff_data_dir)
+if '.DS_Store' in diff_data_dirs:
+    diff_data_dirs.remove('.DS_Store')
+
+for images in diff_data_dirs:
     if 'processed' not in images.lower():
         amend_filenames(f"{diff_data_dir}/{images}")
 
