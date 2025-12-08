@@ -95,10 +95,10 @@ def main():
         "template_file_t1_post": f"{os.getcwd()}/mrtrix3_files/{pid}/template/template_t1_post.dcm",
         "flair_file_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/flair.nii",
         "t2_file_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t2.nii",
-        "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_flair.nii",
-        "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t2.nii",
-        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_post_t1.nii",
-        "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t1.nii",
+        "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_flair.nii.gz",
+        "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t2.nii.gz",
+        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_post_t1.nii.gz",
+        "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t1.nii.gz",
         "t1_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t1.nii",
         "t1_mif": f"{os.getcwd()}/mrtrix3_files/{pid}/converted/t1.mif",
         "t1_post_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t1_post.nii",
@@ -355,16 +355,30 @@ def main():
 
     if step == 12 and cont.lower() == 'y':
         if os.path.isfile(file_paths['reg_t1_file']):
+            print("t1 post conversion")
             convert_tracts(file_paths['t1_post_nii'], 'debug', pid)
         if os.path.isfile(file_paths['reg_t1_post_file']):
             convert_tracts(file_paths['t1_nii'], 'debug', pid)
-        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_file']):
+            print("t1 conversion")
+        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_post_file']):
             nii_files = os.listdir(f"./mrtrix3_files/{pid}/nifti")
             t1_nii_file = None
             for i in nii_files:
                 if 't1' in i:
                     t1_nii_file = f"./mrtrix3_files/{pid}/nifti/" + i
                     break
+            print("hello")
+            t1_post_shape_pre = nib.load(t1_nii_file)
+            t1_shape_pre = nib.load('./mrtrix3_files/170044363/nifti/t1.nii')
+            print("t1 post shape")
+            print(t1_post_shape_pre.shape)
+            print("t1 shape")
+            print(t1_shape_pre.shape)
+            print("Registered Files")
+            print(nib.load('./mrtrix3_files/170044363/nifti/reg_t1.nii.gz').shape)
+            print(nib.load('./mrtrix3_files/170044363/nifti/reg_t2.nii.gz').shape)
+            print(nib.load('./mrtrix3_files/170044363/nifti/reg_flair.nii.gz').shape)
+
             convert_tracts(t1_nii_file, 'debug', pid)
 
         _, is_cont, registered = registration('debug', dependencies, pid)
@@ -471,7 +485,9 @@ def main():
             modified_file = skew(binarised_object, 10)
             nib.save(modified_file, binarised_skew)
 
+            print("Running Multiplication")
             run(f"fslmaths {t1_nii} -mul {binarised_object} {t1_object}")
+            print("Running Subtraction")
             run(f"fslmaths {t1_nii} -sub {t1_object} {t1_hole}")
 
             nii_data = nib.load(t1_hole).get_fdata()
