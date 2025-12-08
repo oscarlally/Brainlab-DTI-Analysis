@@ -20,7 +20,6 @@ from shutil import rmtree
 
 
 def check_dependencies(dependencies):
-
     try:
         # Run 'which' for the given command
         result = subprocess.run(
@@ -36,7 +35,8 @@ def check_dependencies(dependencies):
             dependencies['mrtrix'] = True
 
     except subprocess.CalledProcessError:
-        print("❌ Error finding mrtrix on system path. The code will attempt to run regardless, but this could cause issues")
+        print(
+            "❌ Error finding mrtrix on system path. The code will attempt to run regardless, but this could cause issues")
 
     try:
         # Run 'which' for the given command
@@ -53,7 +53,8 @@ def check_dependencies(dependencies):
             dependencies['fsl'] = True
 
     except subprocess.CalledProcessError:
-        print(f"❌ Error finding fsl on system path. The code will attempt to run regardless, but this could cause issues")
+        print(
+            f"❌ Error finding fsl on system path. The code will attempt to run regardless, but this could cause issues")
 
     return dependencies
 
@@ -108,11 +109,11 @@ def amend_filenames(folder):
     for filepath_end in os.listdir(folder):
         filepath = f"{folder}/{filepath_end}"
         path = Path(filepath)
-        
+
         # Skip if it's a directory
         if path.is_dir():
             continue
-            
+
         has_ext = bool(os.path.splitext(filepath)[1])
         if not has_ext:
             new_path = path.with_suffix('.dcm')
@@ -260,7 +261,6 @@ def run(*args):
 
 
 def register_pre_images(diff_data_dir, file_paths):
-
     for i in get_full_file_names(diff_data_dir):
         if 't1' in i.lower() and 'post' not in i.lower():
             t1_file = get_full_file_names(i)[0]
@@ -281,50 +281,71 @@ def register_pre_images(diff_data_dir, file_paths):
             shutil.copy(t2_file, file_paths['template_file_t2'])
             run(f"mrconvert -strides -1,2,3 {t2_file} {file_paths['t2_file_nii']}")
 
-    display_reg_files = [file_paths['t1_post_nii'], file_paths['t1_nii'], file_paths['flair_file_nii'], file_paths['t2_file_nii']]
+    display_reg_files = [file_paths['t1_post_nii'], file_paths['t1_nii'], file_paths['flair_file_nii'],
+                         file_paths['t2_file_nii']]
     display_reg_check = [os.path.isfile(x) for x in display_reg_files]
-    register_to = None
 
     "Register the files to one of the t1 images, preferentially the post."
-    if display_reg_check[0]:
-        register_to = display_reg_files[0]
-        shutil.copy(file_paths['template_file_t1_post'], file_paths['template_file'])
-    else:
-        register_to = display_reg_files[1]
-        shutil.copy(file_paths['template_file_t1'], file_paths['template_file'])
-    if display_reg_check[2]:
-        shutil.copy(file_paths['template_file_flair'], file_paths['alt_template_file'])
-    else:
-        shutil.copy(file_paths['template_file_t2'], file_paths['alt_template_file'])
+    print("The data acquired have the following formats:")
 
+    indices_to_remove = []
+    for i in display_reg_check:
+        if not i:
+            indices_to_remove.append(i)
+    for i in indices_to_remove[::-1]:
+        display_reg_files.pop(i)
 
+    for idx, i in enumerate(display_reg_files):
+        print(f"{idx + 1}. {i.split('/')[-1]} shape: {nib.load(i).shape}")
+
+    print()
+    while True:
+        register_basis = int(
+            input("Please type in the number of the file you want everything else to be registered to:  "))
+        if 1 <= register_basis <= len(display_reg_files):
+            break
+        else:
+            print("Invalid response, please try again.")
+            print()
+
+    register_to_file = display_reg_files[register_basis - 1]
+    if 't1' in register_to_file:
+        shutil.copy(register_to_file, file_paths['template_file'])
+        for i in display_reg_files:
+            if 't2' in i:
+                shutil.copy(i, file_paths['alt_template_file'])
+                break
+    else:
+        shutil.copy(register_to_file, file_paths['alt_template_file'])
+        for i in display_reg_files:
+            if 't1' in i:
+                shutil.copy(i, file_paths['template_file'])
+                break
 
     "Remove the file we are registering to and their status as a filepath"
-    rem_index = display_reg_files.index(register_to)
-    display_reg_files.remove(register_to)
-    display_reg_check.pop(rem_index)
-    for reg_path, isfile in zip(display_reg_files, display_reg_check):
-        if 'flair' in reg_path and isfile:
+    display_reg_files.remove(register_to_file)
+    for reg_path in display_reg_files:
+        if 'flair' in reg_path:
             flirt_cmd = f"flirt -in {reg_path} \
-            -ref {register_to} \
+            -ref {register_to_file} \
             -omat {file_paths['flirt_transform']} \
             -out {file_paths['reg_flair_file']}"
             run(flirt_cmd)
-        if 'post' in reg_path and isfile:
+        if 'post' in reg_path:
             flirt_cmd = f"flirt -in {reg_path} \
-            -ref {register_to} \
+            -ref {register_to_file} \
             -omat {file_paths['t1_transform']} \
             -out {file_paths['reg_t1_post_file']}"
             run(flirt_cmd)
-        if 't1' in reg_path and isfile and 'post' not in reg_path:
+        if 't1' in reg_path and 'post' not in reg_path:
             flirt_cmd = f"flirt -in {reg_path} \
-            -ref {register_to} \
+            -ref {register_to_file} \
             -omat {file_paths['t1_transform']} \
             -out {file_paths['reg_t1_file']}"
             run(flirt_cmd)
-        if 't2' in reg_path and isfile:
+        if 't2' in reg_path:
             flirt_cmd = f"flirt -in {reg_path} \
-            -ref {register_to} \
+            -ref {register_to_file} \
             -omat {file_paths['t1_transform']} \
             -out {file_paths['reg_t2_file']}"
             run(flirt_cmd)
@@ -593,7 +614,6 @@ def copy_directory(source_dir, destination_dir):
         print(f"Directory copied from {source_dir} to {destination_dir}")
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 
 def safe_copy(src, dst_dir):
