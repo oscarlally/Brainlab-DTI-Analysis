@@ -290,11 +290,12 @@ def register_pre_images(diff_data_dir, file_paths):
     print("The data acquired have the following formats:")
 
     indices_to_remove = []
-    for i in display_reg_check:
+    for idx, i in enumerate(display_reg_check):
         if not i:
-            indices_to_remove.append(i)
+            indices_to_remove.append(idx)
     for i in indices_to_remove[::-1]:
         display_reg_files.pop(i)
+
 
     for idx, i in enumerate(display_reg_files):
         print(f"{idx + 1}. {i.split('/')[-1]} shape: {nib.load(i).shape}")
