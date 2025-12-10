@@ -262,6 +262,7 @@ def run(*args):
 
 def register_pre_images(diff_data_dir, file_paths):
     for i in get_full_file_names(diff_data_dir):
+        print(i)
         if 't1' in i.lower() and 'post' not in i.lower():
             t1_file = get_full_file_names(i)[0]
             shutil.copy(t1_file, file_paths['template_file_t1'])
@@ -272,11 +273,11 @@ def register_pre_images(diff_data_dir, file_paths):
             shutil.copy(t1_post_file, file_paths['template_file_t1_post'])
             run(f"mrconvert {t1_post_file} {file_paths['t1_post_mif']} -force")
             run(f"mrconvert -strides -1,2,3 {t1_post_file} {file_paths['t1_post_nii']}")
-        if 'dark' in i.lower():
+        if 'dark' in i.lower() or 'flair' in i.lower():
             flair_file = f"{get_full_file_names(i)[0]}"
             shutil.copy(flair_file, file_paths['template_file_flair'])
             run(f"mrconvert -strides -1,2,3 {flair_file} {file_paths['flair_file_nii']}")
-        if 't2' in i.lower() and 'dark' not in i.lower():
+        if 't2' in i.lower() and 'dark' not in i.lower() and 'flair' not in i.lower():
             t2_file = f"{get_full_file_names(i)[0]}"
             shutil.copy(t2_file, file_paths['template_file_t2'])
             run(f"mrconvert -strides -1,2,3 {t2_file} {file_paths['t2_file_nii']}")
@@ -480,7 +481,7 @@ def create_mask(nii_list, debug, pid):
         if continue_yn.lower() != 'y':
             rmtree(f"{current_dir}/mrtrix3_files/{pid}/masking/")
             os.makedirs(f"{current_dir}/mrtrix3_files/{pid}/masking/")
-            create_mask(nii_list, debug)
+            create_mask(nii_list, debug, pid)
         else:
             print('Mask Successfully Made')
     else:
@@ -490,7 +491,7 @@ def create_mask(nii_list, debug, pid):
             mr_conv_1_cmd = f"mrconvert {b0_extract} {b0_1_extract} -coord 3 0 -axes 0,1,2"
             mr_conv_2_cmd = f"mrconvert -strides -1,2,3 {b0_1_extract} {b0_extract_nii}"
 
-            masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug)
+            masking(dwi_cmd, mr_conv_1_cmd, mr_conv_2_cmd, debug, pid)
 
             continue_yn = input('Mask correct and continue with analysis? (y/n): ')
             if continue_yn.lower() != 'y':
