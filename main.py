@@ -97,7 +97,7 @@ def main():
         "t2_file_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t2.nii",
         "reg_flair_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_flair.nii.gz",
         "reg_t2_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t2.nii.gz",
-        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_post_t1.nii.gz",
+        "reg_t1_post_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t1_post.nii.gz",
         "reg_t1_file": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/reg_t1.nii.gz",
         "t1_nii": f"{os.getcwd()}/mrtrix3_files/{pid}/nifti/t1.nii",
         "t1_mif": f"{os.getcwd()}/mrtrix3_files/{pid}/converted/t1.mif",
@@ -138,17 +138,31 @@ def main():
     if int(step) == 1 and cont.lower() == 'y':
         print(diff_data_dir)
         # Convert diffusion files to .mif and categorize by type
-        for i in get_full_file_names(diff_data_dir):
-            if 'ep2d' in i.lower() and 'fa' not in i.lower():
-                convert = f"{os.getcwd()}/mrtrix3_files/{pid}/converted/{os.path.basename(i)}.mif"
-                result_cmd = f"mrconvert {i} {convert}"
-                run(result_cmd)
-                file_paths["converted"].append(convert)
-                if 'b0' in i.lower():
-                    if 'flipped' in i.lower():
-                        file_paths["b0_rev"] = convert
-                    else:
-                        file_paths["b0"] = convert
+        if any('ep2d' in f for f in get_full_file_names(diff_data_dir)):
+            for i in get_full_file_names(diff_data_dir):
+                if 'ep2d' in i.lower() and 'fa' not in i.lower():
+                    convert = f"{os.getcwd()}/mrtrix3_files/{pid}/converted/{os.path.basename(i)}.mif"
+                    result_cmd = f"mrconvert {i} {convert}"
+                    run(result_cmd)
+                    file_paths["converted"].append(convert)
+                    if 'b0' in i.lower():
+                        if 'flipped' in i.lower():
+                            file_paths["b0_rev"] = convert
+                        else:
+                            file_paths["b0"] = convert
+        else:
+            for i in get_full_file_names(diff_data_dir):
+                banned = ['fa', 't1', 'flair', 't2', 'dark']
+                if all(word not in i.lower() for word in banned):
+                    convert = f"{os.getcwd()}/mrtrix3_files/{pid}/converted/{os.path.basename(i)}.mif"
+                    result_cmd = f"mrconvert {i} {convert}"
+                    run(result_cmd)
+                    file_paths["converted"].append(convert)
+                    if 'b0' in i.lower():
+                        if 'flipped' in i.lower():
+                            file_paths["b0_rev"] = convert
+                        else:
+                            file_paths["b0"] = convert
         step += 1
         cont = 'y'
 
@@ -169,12 +183,14 @@ def main():
         cat_count = 0
         one_case = None
         for i in file_paths["converted"]:
-            if 'b0' not in i.lower() and 'flipped' not in i.lower():
+            banned = ['fa', 't1', 'flair', 't2', 'dark', 'flipped']
+            if all(word not in i.lower() for word in banned):
                 cat_count += 1
                 cat_cmd += f"{i} "
                 one_case = f"{i}"
         if cat_count > 1:
             cat_cmd += f"{file_paths['concat_file']}"
+            print(cat_cmd)
             run(cat_cmd)
         else:
             print("DEBUG concat_file:", file_paths.get('concat_file'))
