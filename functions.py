@@ -12,6 +12,7 @@ import json
 import time
 import shutil
 import signal
+import pydicom
 import subprocess
 import numpy as np
 import nibabel as nib
@@ -84,25 +85,40 @@ def cache_check(pid, base_dir):
 
     # Check if any stored directory matches the pid
     for directory in stored:
-        if pid in directory:
-            if os.path.isdir(directory):
-                return directory
+        if pid in directory[0]:
+            if os.path.isdir(directory[0]):
+                return directory[0]
             else:
                 # Directory exists in cache but not on disk -> update
                 new_directory = find_dir(pid, base_dir)
-                stored.remove(directory)
-                stored.append(new_directory)
+                stored[:] = [item for item in stored if item[0] != directory[0]]
+                stored.append([new_directory])
                 break
     else:
         # If no matching directory was found at all
         new_directory = find_dir(pid, base_dir)
-        stored.append(new_directory)
+        stored.append([new_directory])
 
     # Save back to JSON
     with open("./cache.json", "w") as f:
         json.dump(data, f, indent=4)
 
-    return stored[-1]  # return the latest directory found
+    return stored[-1][0]  # return the latest directory found
+
+
+def add_reg_to(reg_to_file, pid):
+    # Load existing JSON
+    with open("./cache.json", "r") as f:
+        data = json.load(f)
+    stored = data["stored_patient_directories"]
+
+    for directory in stored:
+        if pid in directory[0] and len(directory) == 1:
+            directory.append(reg_to_file)
+
+    # Save the modified data back to the file
+    with open("./cache.json", "w") as f:
+        json.dump(data, f, indent=4)
 
 
 def amend_filenames(folder):
@@ -262,7 +278,6 @@ def run(*args):
 
 def register_pre_images(diff_data_dir, file_paths):
     for i in get_full_file_names(diff_data_dir):
-        print(i)
         if 't1' in i.lower() and 'post' not in i.lower():
             t1_file = get_full_file_names(i)[0]
             shutil.copy(t1_file, file_paths['template_file_t1'])
@@ -311,18 +326,6 @@ def register_pre_images(diff_data_dir, file_paths):
             print()
 
     register_to_file = display_reg_files[register_basis - 1]
-    if 't1' in register_to_file:
-        shutil.copy(register_to_file, file_paths['template_file'])
-        for i in display_reg_files:
-            if 't2' in i:
-                shutil.copy(i, file_paths['alt_template_file'])
-                break
-    else:
-        shutil.copy(register_to_file, file_paths['alt_template_file'])
-        for i in display_reg_files:
-            if 't1' in i:
-                shutil.copy(i, file_paths['template_file'])
-                break
 
     "Remove the file we are registering to and their status as a filepath"
     display_reg_files.remove(register_to_file)
@@ -352,7 +355,23 @@ def register_pre_images(diff_data_dir, file_paths):
             -out {file_paths['reg_t2_file']}"
             run(flirt_cmd)
 
+    return register_to_file
 
+
+def tensor_reg(reg_to, fa, ev, pid, mif_reg):
+    fa_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/fa_reg.mif"
+    ev_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/ev_reg.mif"
+    warp_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/warp.mif"
+    conv_reg_to = f"mrconvert {reg_to} {mif_reg}"
+    print(conv_reg_to)
+    run(conv_reg_to)
+    conv_fa_cmd = f"mrregister {fa} {mif_reg} - rigid - transformed {fa_reg} - nl_warp {warp_reg}"
+    conv_ev_cmd = f"mrtransform {ev} - warp {warp_reg} - reorient_fod yes {ev_reg}"
+    run(conv_fa_cmd)
+    run(conv_ev_cmd)
+    return fa_reg, ev_reg
+
+    run(flirt_cmd)
 def get_counts(tck_image):
     cmd = f"tckinfo -count {tck_image}"
     result = subprocess.run(cmd.split(), capture_output=True, text=True)
@@ -373,7 +392,19 @@ def get_counts(tck_image):
     return int(number)
 
 
-def convert_tracts(t1_nii, debug, pid):
+def get_shape(nii_file_list):
+    if isinstance(nii_file_list, list):
+        for idx, i in enumerate(nii_file_list):
+            print(f"{idx + 1}. {i.split('/')[-1]} shape: {nib.load(i).shape}")
+    else:
+        if 'dcm' in nii_file_list:
+            data = pydicom.read_file(nii_file_list)
+            return data.pixel_array.shape
+        elif 'nii' in nii_file_list:
+            return nib.load(nii_file_list).shape
+
+
+def convert_tracts(nii_file, debug, pid):
     current_dir = os.getcwd()
     nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
     tract_dir = f"{current_dir}/mrtrix3_files/{pid}/tracts/"
@@ -394,18 +425,14 @@ def convert_tracts(t1_nii, debug, pid):
         N_tracts = get_counts(f"{tract_dir}{i}")
         run(f"mrcalc {mif_file} {N_tracts} -div {norm_file} -force")
         if debug == 'debug':
-            mrview_cmd = f"mrview -mode 2 -load {t1_nii} -interpolation 0 -overlay.load {norm_file} -comments 0"
+            mrview_cmd = f"mrview -mode 2 -load {nii_file} -interpolation 0 -overlay.load {norm_file} -comments 0"
             run(mrview_cmd)
         norm_nii_file = f"{nii_dir}{i.split('.')[0]}_NORM.nii"
         run(f"mrconvert -strides -1,2,3 {norm_file} {norm_nii_file} -axes 0,1,2 -force")
 
-    nii_files = os.listdir(nii_dir)
-    for i in nii_files:
-        if 't1' in i.lower():
-            t1_nii_file = f"{nii_dir}{i}"
-            t1_bet_file = f"{nii_dir}{i.split('.')[0]}_bet.nii.gz"
-            bet_cmd = f"bet {t1_nii_file} {t1_bet_file} -n -m"
-            run(bet_cmd)
+        t1_bet_file = f"{nii_file.split('.')[0]}_bet.nii.gz"
+        bet_cmd = f"bet {nii_file} {t1_bet_file} -n -m"
+        run(bet_cmd)
 
 
 def get_volumes(mif_image):
@@ -560,6 +587,15 @@ def tensor_estimation(DWI_shell, debug, pid):
         if debug == 'debug':
             mrview_cmd = f"mrview -mode 2 -load {tissue_vf} -interpolation 0"
             run(mrview_cmd)
+
+
+def get_nii_file(pid):
+    with open("./cache.json", "r") as f:
+        data = json.load(f)
+    stored = data["stored_patient_directories"]
+    for directory in stored:
+        if pid in directory[0]:
+            return directory[1]
 
 
 def mirror_nifti(input_nifti_path, output_nifti_path):
