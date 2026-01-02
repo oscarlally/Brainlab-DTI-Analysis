@@ -162,7 +162,7 @@ def run_tract_generation(pid, choice, first_flag, finished_flag):
                 "-seed_image", f"mrtrix3_files/{pid}/rois/AF_L.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/SLF_L.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/BROCA_L.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "5", "-force"
+                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "1000", "-force"
             ], seed="AF_L", includes=["SLF_L", "BROCA_L"], notes="AF Left hemisphere")
         if os.path.isfile(f"mrtrix3_files/{pid}/rois/AF_R.mif"):
             tract_path, check = dispatch[flag](pid, [
@@ -170,7 +170,7 @@ def run_tract_generation(pid, choice, first_flag, finished_flag):
                 "-seed_image", f"mrtrix3_files/{pid}/rois/AF_R.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/SLF_R.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/BROCA_R.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "5000", "-force"
+                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "1000", "-force"
             ], seed="AF_R", includes=["SLF_R", "BROCA_R"], notes="AF Right hemisphere")
         return tract_path, check
 
@@ -201,14 +201,14 @@ def run_tract_generation(pid, choice, first_flag, finished_flag):
                 "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-R-SHA.tck",
                 "-seed_image", f"mrtrix3_files/{pid}/rois/RHandS1.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/L-Thal.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.1"
+                "-step", "1", "-angle", "45", "-cutoff", "0.1", "-force"
             ], seed="RHandS1", includes=["L-Thal"], notes="Sensory Hand CST Right")
         if os.path.isfile(f"mrtrix3_files/{pid}/rois/LHandS1.mif"):
             tract_path, check = dispatch[flag](pid, [
                 "tckgen", f"mrtrix3_files/{pid}/fods/wm_fod.mif", f"mrtrix3_files/{pid}/tracts/mrtrix3-L-SHA.tck",
                 "-seed_image", f"mrtrix3_files/{pid}/rois/LHandS1.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/R-Thal.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.1"
+                "-step", "1", "-angle", "45", "-cutoff", "0.1", "-force"
             ], seed="LHandS1", includes=["R-Thal"], notes="Sensory Hand CST Left")
         return tract_path, check
 
@@ -319,7 +319,7 @@ def run_tract_generation(pid, choice, first_flag, finished_flag):
                 "-seed_image", f"mrtrix3_files/{pid}/rois/RFaceM1.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/L-Ped.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/L-Cap.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-force"
+                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "1000", "-force"
             ], seed="RFaceM1", includes=["L-Ped", "L-Cap"], notes="Motor Face CST Right")
         if os.path.isfile(f"mrtrix3_files/{pid}/rois/LFaceM1.mif"):
             tract_path, check = dispatch[flag](pid, [
@@ -327,7 +327,7 @@ def run_tract_generation(pid, choice, first_flag, finished_flag):
                 "-seed_image", f"mrtrix3_files/{pid}/rois/LFaceM1.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/R-Ped.mif",
                 "-include", f"mrtrix3_files/{pid}/rois/R-Cap.mif",
-                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-force"
+                "-step", "1", "-angle", "45", "-cutoff", "0.05", "-select", "1000", "-force"
             ], seed="LFaceM1", includes=["R-Ped", "R-Cap"], notes="Motor Face CST Left")
         return tract_path, check
 
