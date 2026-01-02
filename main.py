@@ -5,23 +5,27 @@ import numpy as np
 import nibabel as nib
 from final_dcm import create_brainlab_object
 from tract_roi_match import roi_table
-from functions import check_and_handle_directories, \
+from functions import (check_and_handle_directories, \
     get_full_file_names, \
     register_pre_images, \
+    add_reg_to, \
     amend_filenames, \
     get_volumes, \
     create_mask, \
     cache_check, \
     safe_copy, \
+    tensor_reg, \
     tensor_estimation, \
+    get_nii_file, \
     convert_tracts, \
     copy_directory, \
-    check_dependencies
+    check_dependencies)
 from register import registration
 from intro import intro
 from generate_tracts import run_tract_generation
 from tract_check import tract_selection_check
 from functions import norm_nii, \
+    get_shape, \
     skew, \
     mirror_nifti
 
@@ -171,7 +175,8 @@ def main():
         print()
         print('---------------------')
         print("Starting registration process due to multiple structural imaging datasets. Please wait...")
-        register_pre_images(diff_data_dir, file_paths)
+        file_reg_to = register_pre_images(diff_data_dir, file_paths)
+        add_reg_to(file_reg_to, pid)
         print("Registration process completed successfully.")
         print()
         step += 1
@@ -182,12 +187,13 @@ def main():
         cat_cmd = "mrcat "
         cat_count = 0
         one_case = None
-        for i in file_paths["converted"]:
+        for i in os.listdir(f'./mrtrix3_files/{pid}/converted'):
             banned = ['fa', 't1', 'flair', 't2', 'dark', 'flipped']
             if all(word not in i.lower() for word in banned):
                 cat_count += 1
-                cat_cmd += f"{i} "
-                one_case = f"{i}"
+                cat_cmd += f'./mrtrix3_files/{pid}/converted/{i} '
+                one_case = f'./mrtrix3_files/{pid}/converted/{i}'
+                print(cat_count)
         if cat_count > 1:
             cat_cmd += f"{file_paths['concat_file']}"
             print(cat_cmd)
@@ -319,17 +325,31 @@ def main():
 
             if choice.lower() == 'y':
                 run('echo -e "Opening mrview"')
-                message = "Step 8: Draw ROIs"
+                message = "Step 10: Draw ROIs"
                 message = "\033[32m" + message + "\033[0m"
                 command = "echo {}".format(message)
                 run(command)
-
-                # step size should be 0.5xvoxelsize (currently set to 1)
                 fa = file_paths['fa']
                 ev = file_paths['ev']
-                dwi_tensor = file_paths['dwi_tensor']
+                converted_nii_file = get_nii_file(pid)
 
-                view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0"
+                # check_reg = input("Do you want to register the fa and ev maps? (y/n): ")
+                # if check_reg.lower() == 'y':
+                #     # step size should be 0.5xvoxelsize (currently set to 1)
+                #
+                #     mif_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/misc/t_reg.mif"
+                #     if not os.path.exists(mif_reg):
+                #         fa_reg, ev_reg = tensor_reg(converted_nii_file, fa, ev, pid, mif_reg)
+                #     else:
+                #         fa_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/fa_reg.mif"
+                #         ev_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/ev_reg.mif"
+                #
+                #     view_cmd = f"mrview -mode 2 -load {fa_reg} -interpolation 0 -load {ev_reg} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
+                #     run(view_cmd)
+                # else:
+                #     view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
+                #     run(view_cmd)
+                view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
                 run(view_cmd)
 
                 break
@@ -346,6 +366,8 @@ def main():
         cont = input('Continue? (y/n): ')
 
     if step == 11 and cont.lower() == 'y':
+
+        "Need to do wm reg"
 
         first_flag = True
         def create_tract(tract_selection_no, first_flag, pid):
@@ -370,68 +392,78 @@ def main():
         cont = input('Continue? (y/n): ')
 
     if step == 12 and cont.lower() == 'y':
-        if os.path.isfile(file_paths['reg_t1_file']):
-            print("t1 post conversion")
-            convert_tracts(file_paths['t1_post_nii'], 'debug', pid)
-        if os.path.isfile(file_paths['reg_t1_post_file']):
-            convert_tracts(file_paths['t1_nii'], 'debug', pid)
-            print("t1 conversion")
-        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_post_file']):
-            nii_files = os.listdir(f"./mrtrix3_files/{pid}/nifti")
-            t1_nii_file = None
-            for i in nii_files:
-                if 't1' in i:
-                    t1_nii_file = f"./mrtrix3_files/{pid}/nifti/" + i
-                    break
-            print("hello")
-            t1_post_shape_pre = nib.load(t1_nii_file)
-            t1_shape_pre = nib.load('./mrtrix3_files/170044363/nifti/t1.nii')
-            print("t1 post shape")
-            print(t1_post_shape_pre.shape)
-            print("t1 shape")
-            print(t1_shape_pre.shape)
-            print("Registered Files")
-            print(nib.load('./mrtrix3_files/170044363/nifti/reg_t1.nii.gz').shape)
-            print(nib.load('./mrtrix3_files/170044363/nifti/reg_t2.nii.gz').shape)
-            print(nib.load('./mrtrix3_files/170044363/nifti/reg_flair.nii.gz').shape)
 
-            convert_tracts(t1_nii_file, 'debug', pid)
-
-        _, is_cont, registered = registration('debug', dependencies, pid)
-        file_paths["registered"].append(registered)
-        cont = is_cont
+        converted_nii_file = get_nii_file(pid)
+        convert_tracts(converted_nii_file, 'debug', pid)
         step += 1
+        cont = input('Continue? (y/n): ')
 
     if step == 13 and cont.lower() == 'y':
+        base_file = get_nii_file(pid)
+        while True:
+            # Execute your registration function
+            _, registered = registration('debug', dependencies, pid, base_file)
+            file_paths["registered"].append(registered)
+            # Ask the user if they want to continue
+            choice = input("Would you like to register additional tracts? (y/n): ").strip().lower()
+            # Check the input to decide whether to loop or exit
+            if choice != 'y':
+                print("Registration process complete.")
+                break
+        step += 1
+        print()
+        cont = input('Continue? (y/n): ')
+
+    if step == 14 and cont.lower() == 'y':
         print()
         print("Creating objects step")
         print()
 
-        "Select the template file you want to use if more than one is available"
-        template_file = None
-        t2_check = None
+        converted_nii_file = get_nii_file(pid)
+        correct_shape = get_shape(converted_nii_file)
+        template_key = converted_nii_file.split('/')[-1].split('.')[0]
         templates_to_use = os.listdir(f"./mrtrix3_files/{pid}/template")
         for x in templates_to_use:
-            if 'alt' in x:
-                t2_check = True
-        if t2_check:
+            if template_key in x:
+                template_path = f"./mrtrix3_files/{pid}/template/template_{template_key}.dcm"
+
+        "Select the template file you want to use if more than one is available"
+        templates = {'t1_temp': None, 't2_temp': None}
+        if 'flair' in template_path or 't2' in template_path:
+            templates['t2_temp'] = f"./mrtrix3_files/{pid}/template/{x}"
+        elif 't1' in template_path:
+            templates['t1_temp'] = f"./mrtrix3_files/{pid}/template/{x}"
+
+        for x in templates_to_use:
+            if not templates['t2_temp']:
+                if 'flair' in x and template_key not in x:
+                    if get_shape(f"./mrtrix3_files/{pid}/template/{x}") == correct_shape:
+                        templates['t2_temp'] = f"./mrtrix3_files/{pid}/template/{x}"
+                elif 't2' in x and template_key not in x:
+                    if get_shape(f"./mrtrix3_files/{pid}/template/{x}") == correct_shape:
+                        templates['t2_temp'] = f"./mrtrix3_files/{pid}/template/{x}"
+            if not templates['t1_temp']:
+                if 't1' in x and template_key not in x:
+                    if get_shape(f"./mrtrix3_files/{pid}/template/{x}") == correct_shape:
+                        templates['t1_temp'] = f"./mrtrix3_files/{pid}/template/{x}"
+
+        if templates['t1_temp'] and templates['t2_temp']:
             print('----------------------')
             print('There is both a t2 and a t1 template.  Do you want to use the:')
             print('1. t1 template')
             print('2. t2 template')
             template_check = input('Please input the option you want to use (1/2): ')
             if template_check == '1':
-                template_file = file_paths['template_file']
+                template_file = templates["t1_temp"]
             else:
-                template_file = file_paths['alt_template_file']
+                template_file = templates["t2_temp"]
         else:
-            template_file = file_paths['template_file']
+            template_file = template_path
 
 
         "Get the correct .nii file depending on which data you end up having."
         current_dir = os.getcwd()
         nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
-        print()
         print()
         print('-----------------')
         t1_nii = None
