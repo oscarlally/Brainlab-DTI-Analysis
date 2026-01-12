@@ -398,7 +398,7 @@ def get_shape(nii_file_list):
             print(f"{idx + 1}. {i.split('/')[-1]} shape: {nib.load(i).shape}")
     else:
         if 'dcm' in nii_file_list:
-            data = pydicom.read_file(nii_file_list)
+            data = pydicom.dcmread(nii_file_list)
             return data.pixel_array.shape
         elif 'nii' in nii_file_list:
             return nib.load(nii_file_list).shape
