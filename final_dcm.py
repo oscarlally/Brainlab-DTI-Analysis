@@ -6,7 +6,7 @@ import random
 import string
 
 
-def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_dicom_path, max_factor, wind_factor):
+def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_dicom_path):
 
     # Load NIfTI file for pixel array
     nifti_data = nib.load(nifti_file_path)
@@ -16,24 +16,16 @@ def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_
     # Update pixel data with rescaled NIfTI pixel array
     dicom_file = pydicom.dcmread(reference_dicom_path, force=True)
 
-    max_value = int(np.max(dicom_file.pixel_array)*max_factor)
-    max_value = 1024
+    # Flatten
+    flat = nifti_pixel_array.flatten(order="K")
 
-    # Flatten the NIfTI pixel array
-    nifti_pixel_array_flat = nifti_pixel_array.flatten(order='K')
-    max_flat = np.max(nifti_pixel_array_flat)
-    nifti_pixel_array_flat[nifti_pixel_array_flat == max_flat] *= 2
+    # Linear rescale to DICOM range
+    scaled = (flat - flat.min()) / (flat.max() - flat.min())
+    rescaled = (scaled * 255).astype(np.uint16)
+    rescaled = rescaled.astype(np.uint16)
 
-    nifti_pixel_array_rescaled = (
-        (nifti_pixel_array_flat - np.min(nifti_pixel_array_flat)) /
-        (np.max(nifti_pixel_array_flat) - np.min(nifti_pixel_array_flat)) * max_value
-    )
-
-    nifti_pixel_array_rescaled = nifti_pixel_array_rescaled.astype(np.uint16)
-
-    # Ensure correct byte order (little-endian)
-    nifti_pixel_array_rescaled = nifti_pixel_array_rescaled.byteswap()
-
+    # Byte order
+    nifti_pixel_array_rescaled = rescaled.byteswap()
 
     # Convert to bytes with 'C' order
     nifti_pixel_data_bytes = nifti_pixel_array_rescaled.tobytes(order='C')
@@ -51,7 +43,6 @@ def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_
     dicom_file.file_meta.TransferSyntaxUID = trans_type  # Explicit VR Little Endian
 
     # Set WindowCenter and WindowWidth based on the peak value
-    dicom_file.WindowCenter = int(max_value*wind_factor)
     current_datetime = datetime.now()
     formatted_datetime = current_datetime.strftime('%Y%m%d%H%M%S')
     series_time = current_datetime.strftime('%H%M%S')
@@ -68,10 +59,3 @@ def create_brainlab_object(tract, nifti_file_path, reference_dicom_path, output_
 
     # Save as a new DICOM file
     dicom_file.save_as(output_dicom_path)
-
-
-
-
-
-
-
