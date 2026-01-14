@@ -10,11 +10,13 @@ from functions import (check_and_handle_directories, \
     register_pre_images, \
     add_reg_to, \
     amend_filenames, \
+    get_shape, \
     get_volumes, \
     create_mask, \
     cache_check, \
     safe_copy, \
     tensor_reg, \
+    binarise_numpy,\
     tensor_estimation, \
     get_nii_file, \
     convert_tracts, \
@@ -24,10 +26,6 @@ from register import registration
 from intro import intro
 from generate_tracts import run_tract_generation
 from tract_check import tract_selection_check
-from functions import norm_nii, \
-    get_shape, \
-    skew, \
-    mirror_nifti
 
 # Check fsl and mrtrix dependencies
 dependencies = {'mrtrix': False, 'fsl': False}
@@ -129,7 +127,7 @@ def main():
 
 
     # Ensure output directories exist
-    check_and_handle_directories(file_paths["output_dirs"], pid)
+    # check_and_handle_directories(file_paths["output_dirs"], pid)
 
     b0s_check = get_full_file_names(f"{os.getcwd()}/mrtrix3_files/{pid}/converted")
     if len(b0s_check) != 0:
@@ -515,68 +513,59 @@ def main():
             thresh_reg_tract = os.path.join(nii_dir, paths_to_convert[idx])
             file_paths["registered"].append(thresh_reg_tract)
 
+            print(thresh_reg_tract)
+
             tract_name_pre = thresh_reg_tract.split('_NORM_registered')[0]
             tract_name = os.path.basename(tract_name_pre)
 
             # Define overlay output files
-            binarised_object = os.path.join(overlay_dir, f"{tract_name}_binarised_object.nii.gz")
-            t1_object = os.path.join(overlay_dir, f"{tract_name}_t1_object.nii.gz")
-            t1_hole = os.path.join(overlay_dir, f"{tract_name}_t1_hole.nii.gz")
-            binarised_skew = os.path.join(overlay_dir, f"{tract_name}_binary_skew.nii.gz")
-            t1_dicom_range = os.path.join(overlay_dir, f"{tract_name}_t1_dicom_range.nii.gz")
-            object_dicom_range = os.path.join(overlay_dir, f"{tract_name}_object_dicom_range.nii.gz")
-            t1_burned = os.path.join(overlay_dir, f"{tract_name}_t1_burned.nii.gz")
-            t1_burned_final = os.path.join(overlay_dir, f"{tract_name}_t1_burned_final.nii.gz")
+            burned = os.path.join(overlay_dir, f"{tract_name}_burned.nii.gz")
+            burned_final = os.path.join(overlay_dir, f"{tract_name}_burned_final.nii.gz")
+            binarised_object_hole = binarise_numpy(thresh_reg_tract, inv=True)
+            binarised_object = binarise_numpy(thresh_reg_tract, inv=False)
 
-            # Process image
-            norm_nii(thresh_reg_tract, binarised_object, 0, 1)
-            modified_file = skew(binarised_object, 10)
-            nib.save(modified_file, binarised_skew)
+            # Remove object
+            nifti_img = nib.load(converted_nii_file)
+            nifti_array = nifti_img.get_fdata()
+            nifti_header = nifti_img.header
+            nifti_affine = nifti_img.affine
 
-            print("Running Multiplication")
-            run(f"fslmaths {t1_nii} -mul {binarised_object} {t1_object}")
-            print("Running Subtraction")
-            run(f"fslmaths {t1_nii} -sub {t1_object} {t1_hole}")
+            hole_array = binarised_object_hole * nifti_array
 
-            nii_data = nib.load(t1_hole).get_fdata()
-            max_hole = np.max(nii_data)
-            norm_num = 60 / max_hole
+            base_max = np.max(nifti_array)
+            burn_value = base_max + 250
 
-            run(f"fslmaths {t1_hole} -mul {norm_num} {t1_dicom_range}")
-            run(f"fslmaths {binarised_skew} -mul {max_value - 60} {object_dicom_range}")
-            run(f"fslmaths {t1_dicom_range} -add {object_dicom_range} {t1_burned}")
+            threshold_to_add = burn_value * binarised_object
+            burned_array = hole_array + threshold_to_add
+            burned_final_array = np.flip(burned_array, axis=1)
 
-            mirror_nifti(t1_burned, t1_burned_final)
+            mod_img = nib.Nifti1Image(burned_array, nifti_affine, nifti_header)
+            mod_img_final = nib.Nifti1Image(burned_final_array, nifti_affine, nifti_header)
+            nib.save(mod_img, burned)
+            nib.save(mod_img_final, burned_final)
 
             # Inner loop for tuning DICOM
             object_path = os.path.join(final_dir, f"Brainlab_Object_{tract_name}.dcm")
 
             while True:
                 print("\nDicom creation. Open the resultant dicom in Volumes and adjust if necessary.\n")
-                wind_factor = input('Type in the window factor (default = 0.5): ').strip() or "0.5"
-                max_factor = input('Type in the max factor (default = 0.66): ').strip() or "0.66"
 
-                create_brainlab_object(tract_name, t1_burned_final, template_file, object_path, float(max_factor),
-                                       float(wind_factor))
+                create_brainlab_object(tract_name, burned_final, template_file, object_path)
 
                 run(f"mrview {object_path}")
                 check = input('Is the dicom file flipped? (y/n): ').strip().lower()
                 if check == 'y':
-                    create_brainlab_object(tract_name, t1_burned, template_file, object_path, float(max_factor),
-                                           float(wind_factor))
-
-                happy = input('Is the dicom contrast sufficient? (y/n): ').strip().lower()
-                if happy == 'y':
-                    dataset = pydicom.dcmread(object_path)
-                    patient_no = dataset.PatientID
-                    if str(patient_no) in diff_data_dir.lower():
-                        if not os.path.isdir(f"{diff_data_dir}/Processed/"):
-                            copy_directory(f"{os.getcwd()}/mrtrix3_files/{pid}/", f"{diff_data_dir}/Processed/")
-                        else:
-                            safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/mrtrix3_files/volumes")
-                        break  # Done with DICOM tuning
+                    create_brainlab_object(tract_name, burned, template_file, object_path)
+                dataset = pydicom.dcmread(object_path)
+                patient_no = dataset.PatientID
+                if str(patient_no) in diff_data_dir.lower():
+                    if not os.path.isdir(f"{diff_data_dir}/Processed/"):
+                        copy_directory(f"{os.getcwd()}/mrtrix3_files/{pid}/", f"{diff_data_dir}/Processed/")
                     else:
-                        break
+                        safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/mrtrix3_files/volumes")
+                    break  # Done with DICOM tuning
+                else:
+                    break
 
             # Ask if user wants to process another
             print()
