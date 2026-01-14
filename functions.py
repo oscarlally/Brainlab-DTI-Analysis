@@ -598,43 +598,16 @@ def get_nii_file(pid):
             return directory[1]
 
 
-def mirror_nifti(input_nifti_path, output_nifti_path):
-    # Load NIfTI file
-    nifti_data = nib.load(input_nifti_path)
-    nifti_data = nib.as_closest_canonical(nifti_data)
-
-    # Get voxel data
-    voxel_data = nifti_data.get_fdata()
-
-    # Mirror along the X-axis
-    mirrored_data = np.flip(voxel_data, axis=1)
-
-    # Create a new NIfTI object with mirrored data
-    mirrored_nifti = nib.Nifti1Image(mirrored_data, nifti_data.affine, nifti_data.header)
-
-    # Save the mirrored NIfTI file
-    nib.save(mirrored_nifti, output_nifti_path)
-
-
-def norm_nii(input_file, output_file, min_value, max_value):
-    # Load the NIfTI image
+def binarise_numpy(input_file, inv = True):
     img = nib.load(input_file)
-    data = img.get_fdata()
+    array = img.get_fdata()
 
-    # Normalize the voxel values to the specified range
-    normalized_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * (max_value - min_value) + min_value
+    if inv:
+        binary = (array == 0).astype(np.uint8)
+    else:
+        binary = (array != 0).astype(np.uint8)
 
-    # Save the normalized data to a new NIfTI file
-    normalized_img = nib.Nifti1Image(normalized_data, img.affine)
-    nib.save(normalized_img, output_file)
-
-
-def skew(binarised_object, skew_factor):
-    nifti_file = nib.load(binarised_object)
-    array = nifti_file.get_fdata()
-    skewed_array = np.where(array <= 0, 0, np.where(array >= 1, 1, 1 - (1 - array) ** skew_factor))
-    modified_file = nib.Nifti1Image(skewed_array, nifti_file.affine)
-    return modified_file
+    return binary
 
 
 def copy_directory(source_dir, destination_dir):
