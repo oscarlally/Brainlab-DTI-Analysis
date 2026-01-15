@@ -330,23 +330,6 @@ def main():
                 fa = file_paths['fa']
                 ev = file_paths['ev']
                 converted_nii_file = get_nii_file(pid)
-
-                # check_reg = input("Do you want to register the fa and ev maps? (y/n): ")
-                # if check_reg.lower() == 'y':
-                #     # step size should be 0.5xvoxelsize (currently set to 1)
-                #
-                #     mif_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/misc/t_reg.mif"
-                #     if not os.path.exists(mif_reg):
-                #         fa_reg, ev_reg = tensor_reg(converted_nii_file, fa, ev, pid, mif_reg)
-                #     else:
-                #         fa_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/fa_reg.mif"
-                #         ev_reg = f"{os.getcwd()}/mrtrix3_files/{pid}/tensors/ev_reg.mif"
-                #
-                #     view_cmd = f"mrview -mode 2 -load {fa_reg} -interpolation 0 -load {ev_reg} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
-                #     run(view_cmd)
-                # else:
-                #     view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
-                #     run(view_cmd)
                 view_cmd = f"mrview -mode 2 -load {fa} -interpolation 0 -load {ev} -interpolation 0 -comments 0 -overlay.load {converted_nii_file}"
                 run(view_cmd)
 
