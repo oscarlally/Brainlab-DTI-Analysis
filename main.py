@@ -459,24 +459,8 @@ def main():
             template_file = template_path
 
 
-        "Get the correct .nii file depending on which data you end up having."
-        current_dir = os.getcwd()
-        nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
-        print()
-        print('-----------------')
-        t1_nii = None
-        if os.path.isfile(file_paths['reg_t1_file']):
-            t1_nii = file_paths['t1_post_nii']
-        if os.path.isfile(file_paths['reg_t1_post_file']):
-            t1_nii = file_paths['t1_nii']
-        if not os.path.isfile(file_paths['reg_t1_file']) and not os.path.isfile(file_paths['reg_t1_post_file']):
-            nii_files = os.listdir(nii_dir)
-            for i in nii_files:
-                if 't1' in i and 'bet' not in i:
-                    t1_nii = nii_dir + i
-
-
         "Work horse of the actual dicom creation"
+        current_dir = os.getcwd()
         nii_dir = f"{current_dir}/mrtrix3_files/{pid}/nifti/"
         overlay_dir = f"{current_dir}/mrtrix3_files/{pid}/overlays/"
         final_dir = f"{current_dir}/mrtrix3_files/{pid}/volumes/"
