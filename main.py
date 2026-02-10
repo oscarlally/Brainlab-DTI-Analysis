@@ -513,7 +513,7 @@ def main():
 
             # Inner loop for tuning DICOM
             object_path = os.path.join(final_dir, f"Brainlab_Object_{tract_name}.dcm")
-
+            
             while True:
                 print("\nDicom creation. Open the resultant dicom in Volumes and adjust if necessary.\n")
 
@@ -529,8 +529,9 @@ def main():
                     if not os.path.isdir(f"{diff_data_dir}/Processed/"):
                         copy_directory(f"{os.getcwd()}/mrtrix3_files/{pid}/", f"{diff_data_dir}/Processed/")
                     else:
-                        safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/mrtrix3_files/volumes")
-                    break  # Done with DICOM tuning
+                        print('Directory already exists.')
+                        safe_copy(f"{object_path}", f"{diff_data_dir}/Processed/volumes")
+                    break
                 else:
                     break
 
